@@ -16,6 +16,8 @@ namespace AutoNexus
             public const float GRACE_PERIOD_DEFAULT = 3f;
             public const float INIT_CHECK_INTERVAL = 5f;
             public const float HEALTH_STABILITY_TIME = 2f;
+            public const string DISCONNECT_KEY = "R";
+            public const string TOGGLE_CHAT_KEY = "Return";
         }
 
         private static MelonPreferences_Category _config;
@@ -25,6 +27,8 @@ namespace AutoNexus
         private static MelonPreferences_Entry<float> _gracePeriodDefault;
         private static MelonPreferences_Entry<float> _initCheckInterval;
         private static MelonPreferences_Entry<float> _healthStabilityTime;
+        private static MelonPreferences_Entry<string> _disconnectKey;
+        private static MelonPreferences_Entry<string> _toggleChatKey;
 
         private const string PLAYER_OBJECT_NAME = "Character(Clone)";
 
@@ -34,13 +38,17 @@ namespace AutoNexus
         private bool _gracePeriodActive;
         private bool _isMonitoringActive;
         private object _monitoringCoroutine;
-
-        // Health stability tracking
         private int _lastHealthValue = -1;
         private float _healthStableTimer = 0f;
         private bool _isTrackingHealth = false;
         private bool _isHealthIncreasing = false;
         private int _previousStableHealth = -1;
+        private int _waitingLogCounter = 0;
+        private const int MAX_WAITING_LOGS = 3;
+        private KeyCode _currentDisconnectKey = KeyCode.R;
+        private KeyCode _currentToggleChatKey = KeyCode.Return;
+
+        private bool _isChatMode = false;
 
         public override void OnInitializeMelon()
         {
@@ -49,6 +57,11 @@ namespace AutoNexus
             MelonCoroutines.Start(InitializePlayer());
         }
 
+        public override void OnUpdate()
+        {
+            ListenForToggleChatKey();
+            ListenForDisconnectKey();
+        }
         private void InitializeConfig()
         {
             _config = MelonPreferences.CreateCategory("AutoNexus");
@@ -71,7 +84,12 @@ namespace AutoNexus
             _healthStabilityTime = _config.CreateEntry("HealthStabilityTime", Defaults.HEALTH_STABILITY_TIME,
                 description: "Time health needs to be stable to update max health (in seconds)");
 
-            // Log current settings
+            _disconnectKey = _config.CreateEntry("DisconnectKey", Defaults.DISCONNECT_KEY,
+                description: "Key to press for manual disconnect (Refer to KeyCode list)");
+
+            _toggleChatKey = _config.CreateEntry("ToggleChatKey", Defaults.TOGGLE_CHAT_KEY,
+                description: "Key to press to toggle chat mode (Refer to KeyCode list)");
+
             LoggerInstance.Msg("=== AutoNexus Settings ===");
             LoggerInstance.Msg($"Health Threshold: {_healthThreshold.Value * 100}%");
             LoggerInstance.Msg($"Update Interval: {_updateInterval.Value}s");
@@ -79,8 +97,10 @@ namespace AutoNexus
             LoggerInstance.Msg($"Grace Period (Default): {_gracePeriodDefault.Value}s");
             LoggerInstance.Msg($"Init Check Interval: {_initCheckInterval.Value}s");
             LoggerInstance.Msg($"Health Stability Time: {_healthStabilityTime.Value}s");
+            LoggerInstance.Msg($"Disconnect Key: {_disconnectKey.Value}");
+            LoggerInstance.Msg($"Toggle Chat Key: {_toggleChatKey.Value}");
+            LoggerInstance.Msg("For a list of KeyCodes, visit: https://docs.unity3d.com/ScriptReference/KeyCode.html");
         }
-
         private IEnumerator InitializePlayer()
         {
             var waitInterval = new WaitForSeconds(_initCheckInterval.Value);
@@ -93,11 +113,14 @@ namespace AutoNexus
                     yield break;
                 }
 
-                LoggerInstance.Msg("Waiting for player character...");
+                if (_waitingLogCounter < MAX_WAITING_LOGS)
+                {
+                    LoggerInstance.Msg("Waiting for player character...");
+                    _waitingLogCounter++;
+                }
                 yield return waitInterval;
             }
         }
-
         private bool TryInitializePlayer()
         {
             _playerCharacter = GameObject.Find(PLAYER_OBJECT_NAME);
@@ -182,18 +205,25 @@ namespace AutoNexus
             if (currentHealth != lastLoggedHealth)
             {
                 lastLoggedHealth = currentHealth;
-                LoggerInstance.Msg($"Health: {currentHealth}/{_maxHealth}");
+
+                if (currentHealth <= _maxHealth * _healthThreshold.Value)
+                {
+                    LoggerInstance.Warning($"Critical health: {currentHealth}/{_maxHealth}");
+                }
+                else
+                {
+                    // Optionally, log at lower verbosity or remove entirely
+                    // LoggerInstance.Debug($"Health: {currentHealth}/{_maxHealth}");
+                }
             }
 
             UpdateHealthStability(currentHealth);
 
             if (ShouldTriggerNexus(currentHealth))
             {
-                LoggerInstance.Warning($"Critical health: {currentHealth}/{_maxHealth}");
                 DisconnectFromWorld();
             }
         }
-
         private void UpdateHealthStability(int currentHealth)
         {
             if (_lastHealthValue == -1)
@@ -230,7 +260,6 @@ namespace AutoNexus
                 }
             }
         }
-
         private bool ShouldTriggerNexus(int currentHealth)
         {
             return !_gracePeriodActive
@@ -238,7 +267,6 @@ namespace AutoNexus
                 && _maxHealth > 0
                 && currentHealth <= _maxHealth * _healthThreshold.Value;
         }
-
         private void DisconnectFromWorld()
         {
             try
@@ -259,7 +287,6 @@ namespace AutoNexus
                 LoggerInstance.Error($"Disconnect error: {ex.Message}");
             }
         }
-
         private void StartGracePeriod(float duration)
         {
             _gracePeriodActive = true;
@@ -272,6 +299,58 @@ namespace AutoNexus
             yield return new WaitForSeconds(duration);
             _gracePeriodActive = false;
             LoggerInstance.Msg("Grace period ended.");
+        }
+        private void ListenForDisconnectKey()
+        {
+            // Ensure the current disconnect key is updated if configuration changes
+            UpdateDisconnectKey();
+
+            if (!_isChatMode && Input.GetKeyDown(_currentDisconnectKey))
+            {
+                LoggerInstance.Msg($"Disconnect key '{_currentDisconnectKey}' pressed. Initiating disconnect...");
+                DisconnectFromWorld();
+            }
+        }
+        private void ListenForToggleChatKey()
+        {
+            // Ensure the current toggle chat key is updated if configuration changes
+            UpdateToggleChatKey();
+
+            if (Input.GetKeyDown(_currentToggleChatKey))
+            {
+                _isChatMode = !_isChatMode;
+                LoggerInstance.Msg($"Chat mode {(_isChatMode ? "enabled" : "disabled")}. Disconnect functionality is now {(!_isChatMode ? "active" : "inactive")}.");
+            }
+        }
+        private void UpdateDisconnectKey()
+        {
+            string keyString = _disconnectKey.Value.ToUpper();
+
+            try
+            {
+                _currentDisconnectKey = (KeyCode)Enum.Parse(typeof(KeyCode), keyString, ignoreCase: true);
+            }
+            catch (ArgumentException)
+            {
+                LoggerInstance.Error($"Invalid KeyCode '{_disconnectKey.Value}' in config. Reverting to default key 'R'.");
+                _currentDisconnectKey = KeyCode.R;
+                _disconnectKey.Value = Defaults.DISCONNECT_KEY;
+            }
+        }
+        private void UpdateToggleChatKey()
+        {
+            string keyString = _toggleChatKey.Value.ToUpper();
+
+            try
+            {
+                _currentToggleChatKey = (KeyCode)Enum.Parse(typeof(KeyCode), keyString, ignoreCase: true);
+            }
+            catch (ArgumentException)
+            {
+                LoggerInstance.Error($"Invalid KeyCode '{_toggleChatKey.Value}' in config. Reverting to default key 'Enter'.");
+                _currentToggleChatKey = KeyCode.Return;
+                _toggleChatKey.Value = Defaults.TOGGLE_CHAT_KEY;
+            }
         }
     }
 }
