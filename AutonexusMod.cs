@@ -12,8 +12,9 @@ namespace AutoNexus
         private const float UPDATE_INTERVAL = 0.01667f;  // ~60 FPS
         private const float GRACE_PERIOD_LOW_HEALTH = 6f;
         private const float GRACE_PERIOD_DEFAULT = 3f;
-        private const int MAX_INIT_RETRIES = 500;
         private const string PLAYER_OBJECT_NAME = "Character(Clone)";
+        private const float INIT_CHECK_INTERVAL = 5f;
+        private const float HEALTH_STABILITY_TIME = 2f;
 
         private GameObject _playerCharacter;
         private Character _characterComponent;
@@ -21,6 +22,12 @@ namespace AutoNexus
         private bool _gracePeriodActive;
         private bool _isMonitoringActive;
         private object _monitoringCoroutine;
+
+        private int _lastHealthValue = -1;
+        private float _healthStableTimer = 0f;
+        private bool _isTrackingHealth = false;
+        private bool _isHealthIncreasing = false;
+        private int _previousStableHealth = -1;
 
         public override void OnInitializeMelon()
         {
@@ -30,7 +37,9 @@ namespace AutoNexus
 
         private IEnumerator InitializePlayer()
         {
-            for (int retry = 0; retry < MAX_INIT_RETRIES; retry++)
+            var waitInterval = new WaitForSeconds(INIT_CHECK_INTERVAL);
+
+            while (true)
             {
                 if (TryInitializePlayer())
                 {
@@ -38,15 +47,9 @@ namespace AutoNexus
                     yield break;
                 }
 
-                if (retry % 10 == 0)
-                {
-                    LoggerInstance.Warning($"Player initialization attempt {retry + 1}/{MAX_INIT_RETRIES}...");
-                }
-
-                yield return new WaitForSeconds(1f);
+                LoggerInstance.Msg("Waiting for player character...");
+                yield return waitInterval;
             }
-
-            LoggerInstance.Error("Failed to initialize player after maximum retries.");
         }
 
         private bool TryInitializePlayer()
@@ -136,7 +139,7 @@ namespace AutoNexus
                 LoggerInstance.Msg($"Health: {currentHealth}/{_maxHealth}");
             }
 
-            UpdateMaxHealth(currentHealth);
+            UpdateHealthStability(currentHealth);
 
             if (ShouldTriggerNexus(currentHealth))
             {
@@ -145,12 +148,41 @@ namespace AutoNexus
             }
         }
 
-        private void UpdateMaxHealth(int currentHealth)
+        private void UpdateHealthStability(int currentHealth)
         {
-            if (_maxHealth == -1 || currentHealth > _maxHealth)
+            // First health value initialization
+            if (_lastHealthValue == -1)
             {
+                _lastHealthValue = currentHealth;
+                _previousStableHealth = currentHealth;
                 _maxHealth = currentHealth;
-                LoggerInstance.Msg($"Max Health Updated: {_maxHealth}");
+                return;
+            }
+
+            if (_lastHealthValue != currentHealth)
+            {
+                _isHealthIncreasing = currentHealth > _lastHealthValue;
+                _lastHealthValue = currentHealth;
+                _healthStableTimer = 0f;
+                _isTrackingHealth = true;
+                return;
+            }
+
+            if (_isTrackingHealth)
+            {
+                _healthStableTimer += UPDATE_INTERVAL;
+
+                if (_healthStableTimer >= HEALTH_STABILITY_TIME)
+                {
+                    _isTrackingHealth = false;
+
+                    if (currentHealth != _previousStableHealth)
+                    {
+                        _previousStableHealth = currentHealth;
+                        _maxHealth = currentHealth;
+                        LoggerInstance.Msg($"Max Health Updated: {_maxHealth} (stable for {HEALTH_STABILITY_TIME}s)");
+                    }
+                }
             }
         }
 
