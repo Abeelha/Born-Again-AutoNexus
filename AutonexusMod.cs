@@ -8,111 +8,158 @@ namespace AutoNexus
 {
     public class AutonexusMod : MelonMod
     {
+        private const float HEALTH_THRESHOLD = 0.2f;  // 20% health threshold
+        private const float UPDATE_INTERVAL = 0.01667f;  // ~60 FPS
+        private const float GRACE_PERIOD_LOW_HEALTH = 6f;
+        private const float GRACE_PERIOD_DEFAULT = 3f;
+        private const int MAX_INIT_RETRIES = 500;
+        private const string PLAYER_OBJECT_NAME = "Character(Clone)";
+
         private GameObject _playerCharacter;
-        private readonly float _updateInterval = 0.01667f; // 16.67ms for 60 FPS
+        private Character _characterComponent;
         private int _maxHealth = -1;
-        private bool _gracePeriodActive = false;
-        private bool _newWorldInstance = false;
-        private readonly float _gracePeriodDurationLowHealth = 6f;
-        private readonly float _gracePeriodDurationDefault = 10f;
+        private bool _gracePeriodActive;
+        private bool _isMonitoringActive;
+        private object _monitoringCoroutine;
 
         public override void OnInitializeMelon()
         {
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
-            MelonCoroutines.Start(WaitForPlayerInitialization());
+            MelonCoroutines.Start(InitializePlayer());
         }
 
-        private IEnumerator WaitForPlayerInitialization()
+        private IEnumerator InitializePlayer()
         {
-            const int maxRetries = 50;
-            int retryCount = 0;
-
-            while (_playerCharacter == null && retryCount < maxRetries)
+            for (int retry = 0; retry < MAX_INIT_RETRIES; retry++)
             {
-                _playerCharacter = GameObject.Find("Character(Clone)");
-
-                if (_playerCharacter != null)
+                if (TryInitializePlayer())
                 {
-                    LoggerInstance.Msg($"Player character found: {_playerCharacter.name}");
-                    LoggerInstance.Msg("Starting health monitoring...");
-                    _newWorldInstance = true;
-                    MelonCoroutines.Start(MonitorPlayerHealth());
+                    StartHealthMonitoring();
                     yield break;
                 }
 
-                retryCount++;
-                LoggerInstance.Warning($"Waiting for player character to initialize... Retry {retryCount}/{maxRetries}");
+                if (retry % 10 == 0)
+                {
+                    LoggerInstance.Warning($"Player initialization attempt {retry + 1}/{MAX_INIT_RETRIES}...");
+                }
+
                 yield return new WaitForSeconds(1f);
             }
 
-            if (_playerCharacter == null)
-                LoggerInstance.Error("Player character could not be initialized after maximum retries.");
+            LoggerInstance.Error("Failed to initialize player after maximum retries.");
+        }
+
+        private bool TryInitializePlayer()
+        {
+            _playerCharacter = GameObject.Find(PLAYER_OBJECT_NAME);
+            if (_playerCharacter == null) return false;
+
+            _characterComponent = _playerCharacter.GetComponent<Character>();
+            if (_characterComponent == null)
+            {
+                LoggerInstance.Warning("Character component not found.");
+                return false;
+            }
+
+            LoggerInstance.Msg($"Player character initialized: {_playerCharacter.name}");
+            return true;
+        }
+
+        private void StartHealthMonitoring()
+        {
+            if (_isMonitoringActive) return;
+
+            _isMonitoringActive = true;
+            LoggerInstance.Msg("Starting health monitoring...");
+            _monitoringCoroutine = MelonCoroutines.Start(MonitorPlayerHealth());
+        }
+
+        private void StopHealthMonitoring()
+        {
+            if (!_isMonitoringActive) return;
+
+            _isMonitoringActive = false;
+            if (_monitoringCoroutine != null)
+            {
+                MelonCoroutines.Stop(_monitoringCoroutine);
+                _monitoringCoroutine = null;
+            }
         }
 
         private IEnumerator MonitorPlayerHealth()
         {
+            var waitInterval = new WaitForSeconds(UPDATE_INTERVAL);
             int lastLoggedHealth = -1;
 
-            while (true)
+            while (_isMonitoringActive)
             {
-                if (_playerCharacter == null || !_playerCharacter.activeSelf)
+                if (!ValidatePlayerState())
                 {
-                    _playerCharacter = GameObject.Find("Character(Clone)");
-                    if (_playerCharacter == null)
-                    {
-                        LoggerInstance.Warning("Player character not found. Retrying...");
-                        yield return new WaitForSeconds(_updateInterval);
-                        continue;
-                    }
+                    yield return waitInterval;
+                    continue;
                 }
 
                 try
                 {
-                    var character = _playerCharacter.GetComponent<Character>();
-                    if (character != null)
-                    {
-                        int currentHealth = character.Health;
-
-                        if (currentHealth != lastLoggedHealth)
-                        {
-                            lastLoggedHealth = currentHealth;
-                            LoggerInstance.Msg($"Player Health: {currentHealth}/{_maxHealth}");
-                        }
-
-                        if (_newWorldInstance)
-                        {
-                            float graceDuration = (currentHealth <= _maxHealth * 0.3f)
-                                ? _gracePeriodDurationLowHealth
-                                : _gracePeriodDurationDefault;
-
-                            StartGracePeriod(graceDuration, currentHealth);
-                            _newWorldInstance = false;
-                        }
-
-                        if (_maxHealth == -1 || currentHealth > _maxHealth)
-                        {
-                            _maxHealth = currentHealth;
-                            LoggerInstance.Msg($"Max Health Updated: {_maxHealth}");
-                        }
-
-                        if (!_gracePeriodActive && currentHealth <= _maxHealth * 0.2f && currentHealth > 0)
-                        {
-                            LoggerInstance.Warning($"Health critically low ({currentHealth}/{_maxHealth}). Disconnecting...");
-                            DisconnectFromWorld();
-                        }
-                    }
-                    else
-                    {
-                        LoggerInstance.Warning("Character component not found on the player GameObject.");
-                    }
+                    ProcessHealthCheck(ref lastLoggedHealth);
                 }
                 catch (Exception ex)
                 {
-                    LoggerInstance.Error($"Error while monitoring player health: {ex.Message}");
+                    LoggerInstance.Error($"Health monitoring error: {ex.Message}");
+                    StopHealthMonitoring();
                 }
 
-                yield return new WaitForSeconds(_updateInterval);
+                yield return waitInterval;
             }
+        }
+
+        private bool ValidatePlayerState()
+        {
+            if (_playerCharacter != null && _playerCharacter.activeSelf) return true;
+
+            _playerCharacter = GameObject.Find(PLAYER_OBJECT_NAME);
+            if (_playerCharacter == null) return false;
+
+            _characterComponent = _playerCharacter.GetComponent<Character>();
+            LoggerInstance.Msg("Player reconnected. Starting grace period...");
+            StartGracePeriod(GRACE_PERIOD_DEFAULT);
+            return true;
+        }
+
+        private void ProcessHealthCheck(ref int lastLoggedHealth)
+        {
+            int currentHealth = _characterComponent.Health;
+
+            if (currentHealth != lastLoggedHealth)
+            {
+                lastLoggedHealth = currentHealth;
+                LoggerInstance.Msg($"Health: {currentHealth}/{_maxHealth}");
+            }
+
+            UpdateMaxHealth(currentHealth);
+
+            if (ShouldTriggerNexus(currentHealth))
+            {
+                LoggerInstance.Warning($"Critical health: {currentHealth}/{_maxHealth}");
+                DisconnectFromWorld();
+            }
+        }
+
+        private void UpdateMaxHealth(int currentHealth)
+        {
+            if (_maxHealth == -1 || currentHealth > _maxHealth)
+            {
+                _maxHealth = currentHealth;
+                LoggerInstance.Msg($"Max Health Updated: {_maxHealth}");
+            }
+        }
+
+        private bool ShouldTriggerNexus(int currentHealth)
+        {
+            return !_gracePeriodActive
+                && currentHealth > 0
+                && _maxHealth > 0
+                && currentHealth <= _maxHealth * HEALTH_THRESHOLD;
         }
 
         private void DisconnectFromWorld()
@@ -120,55 +167,34 @@ namespace AutoNexus
             try
             {
                 var world = UnityEngine.Object.FindObjectOfType<Il2Cpp.World>();
-                if (world != null)
-                {
-                    LoggerInstance.Msg("Attempting to disconnect from the world...");
-                    world.Disconnect();
-                    LoggerInstance.Msg("Player successfully disconnected from the world.");
-                }
-                else
+                if (world == null)
                 {
                     LoggerInstance.Warning("World object not found.");
+                    return;
                 }
+
+                LoggerInstance.Msg("Disconnecting from world...");
+                world.Disconnect();
+                LoggerInstance.Msg("Disconnected successfully.");
             }
             catch (Exception ex)
             {
-                LoggerInstance.Error($"Error while disconnecting from world: {ex.Message}");
+                LoggerInstance.Error($"Disconnect error: {ex.Message}");
             }
         }
 
-        private void StartGracePeriod(float duration, int initialHealth)
+        private void StartGracePeriod(float duration)
         {
             _gracePeriodActive = true;
-            LoggerInstance.Msg($"Grace period started for {duration} seconds...");
-            MelonCoroutines.Start(GracePeriodCooldown(duration, initialHealth));
+            LoggerInstance.Msg($"Grace period: {duration}s");
+            MelonCoroutines.Start(GracePeriodCooldown(duration));
         }
 
-        private IEnumerator GracePeriodCooldown(float duration, int initialHealth)
+        private IEnumerator GracePeriodCooldown(float duration)
         {
-            float elapsedTime = 0f;
-
-            while (elapsedTime < duration)
-            {
-                var character = _playerCharacter?.GetComponent<Character>();
-                if (character != null)
-                {
-                    int currentHealth = character.Health;
-
-                    if (currentHealth > initialHealth)
-                    {
-                        LoggerInstance.Msg($"Health increased during grace period ({currentHealth} > {initialHealth}). AutoNexus reactivated.");
-                        _gracePeriodActive = false;
-                        yield break;
-                    }
-                }
-
-                elapsedTime += _updateInterval;
-                yield return new WaitForSeconds(_updateInterval);
-            }
-
+            yield return new WaitForSeconds(duration);
             _gracePeriodActive = false;
-            LoggerInstance.Msg("Grace period ended. AutoNexus reactivated.");
+            LoggerInstance.Msg("Grace period ended.");
         }
     }
 }
