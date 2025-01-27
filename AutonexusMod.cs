@@ -49,6 +49,7 @@ namespace AutoNexus
         private KeyCode _currentToggleChatKey = KeyCode.Return;
 
         private bool _isChatMode = false;
+        private bool _isDisconnectEnabled = true;
 
         public override void OnInitializeMelon()
         {
@@ -61,6 +62,7 @@ namespace AutoNexus
         {
             ListenForToggleChatKey();
             ListenForDisconnectKey();
+            ListenForLockKey();
         }
         private void InitializeConfig()
         {
@@ -210,11 +212,6 @@ namespace AutoNexus
                 {
                     LoggerInstance.Warning($"Critical health: {currentHealth}/{_maxHealth}");
                 }
-                else
-                {
-                    // Optionally, log at lower verbosity or remove entirely
-                    // LoggerInstance.Debug($"Health: {currentHealth}/{_maxHealth}");
-                }
             }
 
             UpdateHealthStability(currentHealth);
@@ -303,7 +300,8 @@ namespace AutoNexus
         {
             UpdateDisconnectKey();
 
-            if (!_isChatMode && Input.GetKeyDown(_currentDisconnectKey))
+            if (!_isChatMode && _isDisconnectEnabled && Input.GetKeyDown(_currentDisconnectKey) &&
+                !Input.GetKey(KeyCode.LeftControl) && !Input.GetKey(KeyCode.RightControl))
             {
                 LoggerInstance.Msg($"Disconnect key '{_currentDisconnectKey}' pressed. Initiating disconnect...");
                 DisconnectFromWorld();
@@ -319,9 +317,22 @@ namespace AutoNexus
                 LoggerInstance.Msg($"Chat mode {(_isChatMode ? "enabled" : "disabled")}. Disconnect functionality is now {(!_isChatMode ? "active" : "inactive")}.");
             }
         }
+        private void ListenForLockKey()
+        {
+            if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) && Input.GetKeyDown(_currentDisconnectKey))
+            {
+                _isDisconnectEnabled = !_isDisconnectEnabled;
+                LoggerInstance.Msg($"Disconnect functionality is now {(_isDisconnectEnabled ? "enabled" : "disabled")}.");
+            }
+        }
         private void UpdateDisconnectKey()
         {
             string keyString = _disconnectKey.Value.ToUpper();
+
+            if (keyString == "ENTER")
+            {
+                keyString = "RETURN";
+            }
 
             try
             {
@@ -337,6 +348,11 @@ namespace AutoNexus
         private void UpdateToggleChatKey()
         {
             string keyString = _toggleChatKey.Value.ToUpper();
+
+            if (keyString == "ENTER")
+            {
+                keyString = "RETURN";
+            }
 
             try
             {
