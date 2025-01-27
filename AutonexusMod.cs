@@ -263,7 +263,6 @@ namespace AutoNexus
         private bool ShouldTriggerNexus(int currentHealth)
         {
             return !_gracePeriodActive
-                && currentHealth > 0
                 && _maxHealth > 0
                 && currentHealth <= _maxHealth * _healthThreshold.Value;
         }
@@ -302,7 +301,6 @@ namespace AutoNexus
         }
         private void ListenForDisconnectKey()
         {
-            // Ensure the current disconnect key is updated if configuration changes
             UpdateDisconnectKey();
 
             if (!_isChatMode && Input.GetKeyDown(_currentDisconnectKey))
@@ -313,7 +311,6 @@ namespace AutoNexus
         }
         private void ListenForToggleChatKey()
         {
-            // Ensure the current toggle chat key is updated if configuration changes
             UpdateToggleChatKey();
 
             if (Input.GetKeyDown(_currentToggleChatKey))
