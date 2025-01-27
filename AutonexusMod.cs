@@ -8,13 +8,25 @@ namespace AutoNexus
 {
     public class AutonexusMod : MelonMod
     {
-        private const float HEALTH_THRESHOLD = 0.2f;  // 20% health threshold
-        private const float UPDATE_INTERVAL = 0.01667f;  // ~60 FPS
-        private const float GRACE_PERIOD_LOW_HEALTH = 6f;
-        private const float GRACE_PERIOD_DEFAULT = 3f;
+        private static class Defaults
+        {
+            public const float HEALTH_THRESHOLD = 0.2f;
+            public const float UPDATE_INTERVAL = 0.01667f;
+            public const float GRACE_PERIOD_LOW_HEALTH = 6f;
+            public const float GRACE_PERIOD_DEFAULT = 3f;
+            public const float INIT_CHECK_INTERVAL = 5f;
+            public const float HEALTH_STABILITY_TIME = 2f;
+        }
+
+        private static MelonPreferences_Category _config;
+        private static MelonPreferences_Entry<float> _healthThreshold;
+        private static MelonPreferences_Entry<float> _updateInterval;
+        private static MelonPreferences_Entry<float> _gracePeriodLowHealth;
+        private static MelonPreferences_Entry<float> _gracePeriodDefault;
+        private static MelonPreferences_Entry<float> _initCheckInterval;
+        private static MelonPreferences_Entry<float> _healthStabilityTime;
+
         private const string PLAYER_OBJECT_NAME = "Character(Clone)";
-        private const float INIT_CHECK_INTERVAL = 5f;
-        private const float HEALTH_STABILITY_TIME = 2f;
 
         private GameObject _playerCharacter;
         private Character _characterComponent;
@@ -23,6 +35,7 @@ namespace AutoNexus
         private bool _isMonitoringActive;
         private object _monitoringCoroutine;
 
+        // Health stability tracking
         private int _lastHealthValue = -1;
         private float _healthStableTimer = 0f;
         private bool _isTrackingHealth = false;
@@ -31,13 +44,46 @@ namespace AutoNexus
 
         public override void OnInitializeMelon()
         {
+            InitializeConfig();
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
             MelonCoroutines.Start(InitializePlayer());
         }
 
+        private void InitializeConfig()
+        {
+            _config = MelonPreferences.CreateCategory("AutoNexus");
+
+            _healthThreshold = _config.CreateEntry("HealthThreshold", Defaults.HEALTH_THRESHOLD,
+                description: "Percentage of health (0.2 = 20%) at which to trigger nexus");
+
+            _updateInterval = _config.CreateEntry("UpdateInterval", Defaults.UPDATE_INTERVAL,
+                description: "How often to check health (in seconds). 0.01667 = 60 FPS");
+
+            _gracePeriodLowHealth = _config.CreateEntry("GracePeriodLowHealth", Defaults.GRACE_PERIOD_LOW_HEALTH,
+                description: "Grace period duration for low health (in seconds)");
+
+            _gracePeriodDefault = _config.CreateEntry("GracePeriodDefault", Defaults.GRACE_PERIOD_DEFAULT,
+                description: "Default grace period duration (in seconds)");
+
+            _initCheckInterval = _config.CreateEntry("InitCheckInterval", Defaults.INIT_CHECK_INTERVAL,
+                description: "How often to check for player initialization (in seconds)");
+
+            _healthStabilityTime = _config.CreateEntry("HealthStabilityTime", Defaults.HEALTH_STABILITY_TIME,
+                description: "Time health needs to be stable to update max health (in seconds)");
+
+            // Log current settings
+            LoggerInstance.Msg("=== AutoNexus Settings ===");
+            LoggerInstance.Msg($"Health Threshold: {_healthThreshold.Value * 100}%");
+            LoggerInstance.Msg($"Update Interval: {_updateInterval.Value}s");
+            LoggerInstance.Msg($"Grace Period (Low Health): {_gracePeriodLowHealth.Value}s");
+            LoggerInstance.Msg($"Grace Period (Default): {_gracePeriodDefault.Value}s");
+            LoggerInstance.Msg($"Init Check Interval: {_initCheckInterval.Value}s");
+            LoggerInstance.Msg($"Health Stability Time: {_healthStabilityTime.Value}s");
+        }
+
         private IEnumerator InitializePlayer()
         {
-            var waitInterval = new WaitForSeconds(INIT_CHECK_INTERVAL);
+            var waitInterval = new WaitForSeconds(_initCheckInterval.Value);
 
             while (true)
             {
@@ -91,7 +137,7 @@ namespace AutoNexus
 
         private IEnumerator MonitorPlayerHealth()
         {
-            var waitInterval = new WaitForSeconds(UPDATE_INTERVAL);
+            var waitInterval = new WaitForSeconds(_updateInterval.Value);
             int lastLoggedHealth = -1;
 
             while (_isMonitoringActive)
@@ -125,7 +171,7 @@ namespace AutoNexus
 
             _characterComponent = _playerCharacter.GetComponent<Character>();
             LoggerInstance.Msg("Player reconnected. Starting grace period...");
-            StartGracePeriod(GRACE_PERIOD_DEFAULT);
+            StartGracePeriod(_gracePeriodDefault.Value);
             return true;
         }
 
@@ -150,7 +196,6 @@ namespace AutoNexus
 
         private void UpdateHealthStability(int currentHealth)
         {
-            // First health value initialization
             if (_lastHealthValue == -1)
             {
                 _lastHealthValue = currentHealth;
@@ -170,9 +215,9 @@ namespace AutoNexus
 
             if (_isTrackingHealth)
             {
-                _healthStableTimer += UPDATE_INTERVAL;
+                _healthStableTimer += _updateInterval.Value;
 
-                if (_healthStableTimer >= HEALTH_STABILITY_TIME)
+                if (_healthStableTimer >= _healthStabilityTime.Value)
                 {
                     _isTrackingHealth = false;
 
@@ -180,7 +225,7 @@ namespace AutoNexus
                     {
                         _previousStableHealth = currentHealth;
                         _maxHealth = currentHealth;
-                        LoggerInstance.Msg($"Max Health Updated: {_maxHealth} (stable for {HEALTH_STABILITY_TIME}s)");
+                        LoggerInstance.Msg($"Max Health Updated: {_maxHealth} (stable for {_healthStabilityTime.Value}s)");
                     }
                 }
             }
@@ -191,7 +236,7 @@ namespace AutoNexus
             return !_gracePeriodActive
                 && currentHealth > 0
                 && _maxHealth > 0
-                && currentHealth <= _maxHealth * HEALTH_THRESHOLD;
+                && currentHealth <= _maxHealth * _healthThreshold.Value;
         }
 
         private void DisconnectFromWorld()
