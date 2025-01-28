@@ -12,12 +12,12 @@ namespace AutoNexus
         private static class Defaults
         {
             public const float HEALTH_THRESHOLD = 0.2f;
-            public const float UPDATE_INTERVAL = 0.01667f;
+            public const float UPDATE_INTERVAL = 0.010f;
             public const float GRACE_PERIOD_LOW_HEALTH = 6f;
-            public const float GRACE_PERIOD_DEFAULT = 3f;
+            public const float GRACE_PERIOD_DEFAULT = 4.5f;
             public const float INIT_CHECK_INTERVAL = 5f;
             public const float HEALTH_STABILITY_TIME = 2f;
-            public const string DISCONNECT_KEY = "R";
+            public const string DISCONNECT_KEY = "F";
             public const string TOGGLE_CHAT_KEY = "Return";
         }
 
@@ -51,6 +51,9 @@ namespace AutoNexus
 
         private bool _isChatMode = false;
         private bool _isDisconnectEnabled = true;
+
+        private const uint SND_ASYNC = 0x0001;
+        private const uint SND_FILENAME = 0x00020000;
 
         [DllImport("winmm.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern bool PlaySound(string pszSound, IntPtr hmod, uint fdwSound);
