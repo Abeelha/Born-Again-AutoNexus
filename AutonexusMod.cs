@@ -3,6 +3,7 @@ using System.Collections;
 using Il2Cpp;
 using MelonLoader;
 using UnityEngine;
+using System.Runtime.InteropServices;
 
 namespace AutoNexus
 {
@@ -51,8 +52,17 @@ namespace AutoNexus
         private bool _isChatMode = false;
         private bool _isDisconnectEnabled = true;
 
+        [DllImport("winmm.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool PlaySound(string pszSound, IntPtr hmod, uint fdwSound);
+
         public override void OnInitializeMelon()
         {
+            string soundsFolder = "Mods/sounds";
+            if (!System.IO.Directory.Exists(soundsFolder))
+            {
+                System.IO.Directory.CreateDirectory(soundsFolder);
+                LoggerInstance.Msg($"Created sounds folder at: {soundsFolder}");
+            }
             InitializeConfig();
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
             MelonCoroutines.Start(InitializePlayer());
@@ -103,6 +113,24 @@ namespace AutoNexus
             LoggerInstance.Msg($"Toggle Chat Key: {_toggleChatKey.Value}");
             LoggerInstance.Msg("For a list of KeyCodes, visit: https://docs.unity3d.com/ScriptReference/KeyCode.html");
         }
+
+        private void PlaySoundFile(bool isEnabled)
+        {
+            string soundFilePath = isEnabled ? "Mods/sounds/enable.wav" : "Mods/sounds/disable.wav";
+
+            if (System.IO.File.Exists(soundFilePath))
+            {
+                if (!PlaySound(soundFilePath, IntPtr.Zero, SND_ASYNC))
+                {
+                    LoggerInstance.Error($"Failed to play sound file: {soundFilePath}");
+                }
+            }
+            else
+            {
+                LoggerInstance.Error($"Sound file not found: {soundFilePath}");
+            }
+        }
+
         private IEnumerator InitializePlayer()
         {
             var waitInterval = new WaitForSeconds(_initCheckInterval.Value);
@@ -307,6 +335,7 @@ namespace AutoNexus
                 DisconnectFromWorld();
             }
         }
+
         private void ListenForToggleChatKey()
         {
             UpdateToggleChatKey();
@@ -323,6 +352,8 @@ namespace AutoNexus
             {
                 _isDisconnectEnabled = !_isDisconnectEnabled;
                 LoggerInstance.Msg($"Disconnect functionality is now {(_isDisconnectEnabled ? "enabled" : "disabled")}.");
+
+                PlaySoundFile(_isDisconnectEnabled);
             }
         }
         private void UpdateDisconnectKey()
