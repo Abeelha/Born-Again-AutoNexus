@@ -4,6 +4,7 @@ using Il2Cpp;
 using MelonLoader;
 using UnityEngine;
 using System.Runtime.InteropServices;
+using Il2CppSystem;
 
 namespace AutoNexus
 {
@@ -19,6 +20,13 @@ namespace AutoNexus
             public const float HEALTH_STABILITY_TIME = 2f;
             public const string DISCONNECT_KEY = "F";
             public const string TOGGLE_CHAT_KEY = "Return";
+            public const string NEW_PLAYER_GUI_NAME = "Juix love me again please";
+            public const float DEFAULT_PIXELS_PER_UNIT = 8f;
+            public const float PIXELS_PER_UNIT_STEP = 0.5f;
+            public const float MIN_PIXELS_PER_UNIT = 2f;
+            public const float MAX_PIXELS_PER_UNIT = 20f;
+            public const string DEFAULT_ZOOM_IN_KEY = "MouseScrollUp";
+            public const string DEFAULT_ZOOM_OUT_KEY = "MouseScrollDown";
         }
 
         private static MelonPreferences_Category _config;
@@ -30,11 +38,19 @@ namespace AutoNexus
         private static MelonPreferences_Entry<float> _healthStabilityTime;
         private static MelonPreferences_Entry<string> _disconnectKey;
         private static MelonPreferences_Entry<string> _toggleChatKey;
+        private static MelonPreferences_Entry<string> _playerName;
+        private static MelonPreferences_Entry<float> _pixelsPerUnit;
+        private static MelonPreferences_Entry<float> _pixelsPerUnitStep;
+        private static MelonPreferences_Entry<float> _minPixelsPerUnit;
+        private static MelonPreferences_Entry<float> _maxPixelsPerUnit;
+        private static MelonPreferences_Entry<string> _zoomInKey;
+        private static MelonPreferences_Entry<string> _zoomOutKey;
 
         private const string PLAYER_OBJECT_NAME = "Character(Clone)";
 
         private GameObject _playerCharacter;
         private Character _characterComponent;
+        private WorldCamera _worldCamera;
         private int _maxHealth = -1;
         private bool _gracePeriodActive;
         private bool _isMonitoringActive;
@@ -48,6 +64,11 @@ namespace AutoNexus
         private const int MAX_WAITING_LOGS = 3;
         private KeyCode _currentDisconnectKey = KeyCode.R;
         private KeyCode _currentToggleChatKey = KeyCode.Return;
+        private KeyCode _currentZoomInKey;
+        private KeyCode _currentZoomOutKey;
+        private float _lastUsedPixelsPerUnit;
+        private bool _hasInitializedZoom = false;
+
 
         private bool _isChatMode = false;
         private bool _isDisconnectEnabled = true;
@@ -56,7 +77,7 @@ namespace AutoNexus
         private const uint SND_FILENAME = 0x00020000;
 
         [DllImport("winmm.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern bool PlaySound(string pszSound, IntPtr hmod, uint fdwSound);
+        private static extern bool PlaySound(string pszSound, System.IntPtr hmod, uint fdwSound);
 
         public override void OnInitializeMelon()
         {
@@ -76,6 +97,7 @@ namespace AutoNexus
             ListenForToggleChatKey();
             ListenForDisconnectKey();
             ListenForLockKey();
+            ListenForFOVAdjustments();
         }
         private void InitializeConfig()
         {
@@ -105,6 +127,29 @@ namespace AutoNexus
             _toggleChatKey = _config.CreateEntry("ToggleChatKey", Defaults.TOGGLE_CHAT_KEY,
                 description: "Key to press to toggle chat mode (Refer to KeyCode list)");
 
+            _playerName = _config.CreateEntry("PlayerName", Defaults.NEW_PLAYER_GUI_NAME,
+                description: "Custom name for the player");
+
+            _pixelsPerUnit = _config.CreateEntry("PixelsPerUnit", Defaults.DEFAULT_PIXELS_PER_UNIT,
+                description: "Default zoom level (lower = farther view, higher = closer).");
+
+            _pixelsPerUnitStep = _config.CreateEntry("PixelsPerUnitStep", Defaults.PIXELS_PER_UNIT_STEP,
+                description: "How much to increase/decrease zoom per key press.");
+
+            _minPixelsPerUnit = _config.CreateEntry("MinPixelsPerUnit", Defaults.MIN_PIXELS_PER_UNIT,
+                description: "Minimum zoom out limit.");
+
+            _maxPixelsPerUnit = _config.CreateEntry("MaxPixelsPerUnit", Defaults.MAX_PIXELS_PER_UNIT,
+                description: "Maximum zoom in limit.");
+
+            _zoomInKey = _config.CreateEntry("ZoomInKey", Defaults.DEFAULT_ZOOM_IN_KEY,
+                description: "Key to zoom in (default: MouseScrollDown).");
+
+            _zoomOutKey = _config.CreateEntry("ZoomOutKey", Defaults.DEFAULT_ZOOM_OUT_KEY,
+                description: "Key to zoom out (default: MouseScrollUp).");
+
+            LoggerInstance.Msg("=== Customization Settings ===");
+            LoggerInstance.Msg($"Player Name: {_playerName.Value}");
             LoggerInstance.Msg("=== AutoNexus Settings ===");
             LoggerInstance.Msg($"Health Threshold: {_healthThreshold.Value * 100}%");
             LoggerInstance.Msg($"Update Interval: {_updateInterval.Value}s");
@@ -115,23 +160,13 @@ namespace AutoNexus
             LoggerInstance.Msg($"Disconnect Key: {_disconnectKey.Value}");
             LoggerInstance.Msg($"Toggle Chat Key: {_toggleChatKey.Value}");
             LoggerInstance.Msg("For a list of KeyCodes, visit: https://docs.unity3d.com/ScriptReference/KeyCode.html");
-        }
-
-        private void PlaySoundFile(bool isEnabled)
-        {
-            string soundFilePath = isEnabled ? "Mods/sounds/enable.wav" : "Mods/sounds/disable.wav";
-
-            if (System.IO.File.Exists(soundFilePath))
-            {
-                if (!PlaySound(soundFilePath, IntPtr.Zero, SND_ASYNC))
-                {
-                    LoggerInstance.Error($"Failed to play sound file: {soundFilePath}");
-                }
-            }
-            else
-            {
-                LoggerInstance.Error($"Sound file not found: {soundFilePath}");
-            }
+            LoggerInstance.Msg("=== Camera Settings ===");
+            LoggerInstance.Msg($"Default PixelsPerUnit: {_pixelsPerUnit.Value}");
+            LoggerInstance.Msg($"PixelsPerUnit Step: {_pixelsPerUnitStep.Value}");
+            LoggerInstance.Msg($"Min PixelsPerUnit: {_minPixelsPerUnit.Value}");
+            LoggerInstance.Msg($"Max PixelsPerUnit: {_maxPixelsPerUnit.Value}");
+            LoggerInstance.Msg($"Zoom In Key: {_zoomInKey.Value}");
+            LoggerInstance.Msg($"Zoom Out Key: {_zoomOutKey.Value}");
         }
 
         private IEnumerator InitializePlayer()
@@ -157,7 +192,8 @@ namespace AutoNexus
         private bool TryInitializePlayer()
         {
             _playerCharacter = GameObject.Find(PLAYER_OBJECT_NAME);
-            if (_playerCharacter == null) return false;
+            if (_playerCharacter == null)
+                return false;
 
             _characterComponent = _playerCharacter.GetComponent<Character>();
             if (_characterComponent == null)
@@ -166,7 +202,19 @@ namespace AutoNexus
                 return false;
             }
 
-            LoggerInstance.Msg($"Player character initialized: {_playerCharacter.name}");
+            var entity = _playerCharacter.GetComponent<Il2Cpp.Entity>();
+            if (entity != null)
+            {
+                LoggerInstance.Msg($"Setting entity name and GUI name to: {_playerName.Value}");
+                entity.SetEntityName(_playerName.Value);
+                entity.SetEntityGuiName(_playerName.Value);
+            }
+            else
+            {
+                LoggerInstance.Warning("Entity component not found on player character during initialization.");
+            }
+
+            LoggerInstance.Msg($"Player character initialized with custom name: {_playerName.Value}");
             return true;
         }
 
@@ -178,7 +226,6 @@ namespace AutoNexus
             LoggerInstance.Msg("Starting health monitoring...");
             _monitoringCoroutine = MelonCoroutines.Start(MonitorPlayerHealth());
         }
-
         private void StopHealthMonitoring()
         {
             if (!_isMonitoringActive) return;
@@ -190,7 +237,6 @@ namespace AutoNexus
                 _monitoringCoroutine = null;
             }
         }
-
         private IEnumerator MonitorPlayerHealth()
         {
             var waitInterval = new WaitForSeconds(_updateInterval.Value);
@@ -208,7 +254,7 @@ namespace AutoNexus
                 {
                     ProcessHealthCheck(ref lastLoggedHealth);
                 }
-                catch (Exception ex)
+                catch (System.Exception ex)
                 {
                     LoggerInstance.Error($"Health monitoring error: {ex.Message}");
                     StopHealthMonitoring();
@@ -217,20 +263,23 @@ namespace AutoNexus
                 yield return waitInterval;
             }
         }
-
         private bool ValidatePlayerState()
         {
-            if (_playerCharacter != null && _playerCharacter.activeSelf) return true;
+            if (_playerCharacter != null && _playerCharacter.activeSelf)
+                return true;
 
             _playerCharacter = GameObject.Find(PLAYER_OBJECT_NAME);
-            if (_playerCharacter == null) return false;
+            if (_playerCharacter == null)
+                return false;
 
             _characterComponent = _playerCharacter.GetComponent<Character>();
             LoggerInstance.Msg("Player reconnected. Starting grace period...");
+
+            _worldCamera = null;
+
             StartGracePeriod(_gracePeriodDefault.Value);
             return true;
         }
-
         private void ProcessHealthCheck(ref int lastLoggedHealth)
         {
             int currentHealth = _characterComponent.Health;
@@ -309,7 +358,7 @@ namespace AutoNexus
                 world.Disconnect();
                 LoggerInstance.Msg("Disconnected successfully.");
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 LoggerInstance.Error($"Disconnect error: {ex.Message}");
             }
@@ -370,9 +419,9 @@ namespace AutoNexus
 
             try
             {
-                _currentDisconnectKey = (KeyCode)Enum.Parse(typeof(KeyCode), keyString, ignoreCase: true);
+                _currentDisconnectKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), keyString, ignoreCase: true);
             }
-            catch (ArgumentException)
+            catch (System.ArgumentException)
             {
                 LoggerInstance.Error($"Invalid KeyCode '{_disconnectKey.Value}' in config. Reverting to default key 'R'.");
                 _currentDisconnectKey = KeyCode.R;
@@ -390,13 +439,86 @@ namespace AutoNexus
 
             try
             {
-                _currentToggleChatKey = (KeyCode)Enum.Parse(typeof(KeyCode), keyString, ignoreCase: true);
+                _currentToggleChatKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), keyString, ignoreCase: true);
             }
-            catch (ArgumentException)
+            catch (System.ArgumentException)
             {
                 LoggerInstance.Error($"Invalid KeyCode '{_toggleChatKey.Value}' in config. Reverting to default key 'Enter'.");
                 _currentToggleChatKey = KeyCode.Return;
                 _toggleChatKey.Value = Defaults.TOGGLE_CHAT_KEY;
+            }
+        }
+        private void PlaySoundFile(bool isEnabled)
+        {
+            string soundFilePath = isEnabled ? "Mods/sounds/enable.wav" : "Mods/sounds/disable.wav";
+
+            if (System.IO.File.Exists(soundFilePath))
+            {
+                if (!PlaySound(soundFilePath, System.IntPtr.Zero, SND_ASYNC))
+                {
+                    LoggerInstance.Error($"Failed to play sound file: {soundFilePath}");
+                }
+            }
+            else
+            {
+                LoggerInstance.Error($"Sound file not found: {soundFilePath}");
+            }
+        }
+
+
+        private void ListenForFOVAdjustments()
+        {
+            if (_worldCamera == null)
+            {
+                _worldCamera = UnityEngine.Object.FindObjectOfType<WorldCamera>();
+                if (_worldCamera == null)
+                {
+                    return;
+                }
+
+                if (!_hasInitializedZoom)
+                {
+                    _lastUsedPixelsPerUnit = _pixelsPerUnit.Value;
+                    _hasInitializedZoom = true;
+                }
+                _worldCamera.PixelsPerUnit = _lastUsedPixelsPerUnit;
+                LoggerInstance.Msg($"Applied saved camera zoom: PixelsPerUnit = {_lastUsedPixelsPerUnit}");
+            }
+
+            float newPixelsPerUnit = _worldCamera.PixelsPerUnit;
+            bool adjustmentMade = false;
+
+            float scrollDelta = Input.mouseScrollDelta.y;
+            if (scrollDelta != 0)
+            {
+                if ((scrollDelta > 0 && _zoomInKey.Value.ToUpper() == "MOUSESCROLLUP") ||
+                    (scrollDelta < 0 && _zoomOutKey.Value.ToUpper() == "MOUSESCROLLDOWN"))
+                {
+                    newPixelsPerUnit += _pixelsPerUnitStep.Value * Mathf.Sign(scrollDelta);
+                    adjustmentMade = true;
+                }
+            }
+
+            if (_currentZoomInKey != KeyCode.None && Input.GetKeyDown(_currentZoomInKey))
+            {
+                newPixelsPerUnit += _pixelsPerUnitStep.Value;
+                adjustmentMade = true;
+            }
+            else if (_currentZoomOutKey != KeyCode.None && Input.GetKeyDown(_currentZoomOutKey))
+            {
+                newPixelsPerUnit -= _pixelsPerUnitStep.Value;
+                adjustmentMade = true;
+            }
+
+            if (adjustmentMade)
+            {
+                newPixelsPerUnit = Mathf.Clamp(newPixelsPerUnit, _minPixelsPerUnit.Value, _maxPixelsPerUnit.Value);
+                if (System.Math.Abs(newPixelsPerUnit - _worldCamera.PixelsPerUnit) > 0.01f)
+                {
+                    _worldCamera.PixelsPerUnit = newPixelsPerUnit;
+                    _lastUsedPixelsPerUnit = newPixelsPerUnit;
+                    LoggerInstance.Msg($"Camera Zoom Updated: PixelsPerUnit = {newPixelsPerUnit}");
+                }
             }
         }
     }
