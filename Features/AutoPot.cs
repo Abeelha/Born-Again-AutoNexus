@@ -122,7 +122,8 @@ namespace AutoNexus.Features
 
         public void Update()
         {
-            if (Input.GetKeyDown(_currentAutoPotToggleKey))
+            if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
+                Input.GetKeyDown(_currentAutoPotToggleKey))
             {
                 _autoPotEnabled = !_autoPotEnabled;
                 _logger.Msg($"AutoPot toggled {(_autoPotEnabled ? "ON" : "OFF")}.");
