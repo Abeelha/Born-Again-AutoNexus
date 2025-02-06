@@ -16,6 +16,7 @@ namespace AutoNexus
 
         public override void OnInitializeMelon()
         {
+            GUI.Main(new string [] { });
             _config = new ModConfig();
             _config.Initialize(LoggerInstance);
 
