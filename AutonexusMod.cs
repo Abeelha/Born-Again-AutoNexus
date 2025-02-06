@@ -27,7 +27,7 @@ namespace AutoNexus
             _keyboardController = new KeyboardController(_config, LoggerInstance, _soundManager);
             _nameChanger = new NameChanger(_config, LoggerInstance, "Character(Clone)");
             _antiAFK = new AntiAFK(LoggerInstance);
-            _autoPot = new AutoPot(LoggerInstance, _config);
+            _autoPot = new AutoPot(LoggerInstance, _config, _soundManager);
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
         }
 

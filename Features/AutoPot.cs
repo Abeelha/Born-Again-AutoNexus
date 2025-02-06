@@ -6,6 +6,7 @@ using Il2Cpp;
 using AutoNexus.Configuration;
 using AutoNexus.Constants;
 using AutoNexus.Helpers;
+using AutoNexus.Utils;
 
 namespace AutoNexus.Features
 {
@@ -13,20 +14,25 @@ namespace AutoNexus.Features
     {
         private readonly MelonLogger.Instance _logger;
         private readonly ModConfig _config;
+        private readonly SoundManager _soundManager;
         private GameObject _playerCharacter;
         private Character _characterComponent;
         private HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
         private bool _isSimulatingKeyPress;
         private byte _autoPotKey;
         private bool _gracePeriodActive;
+        private bool _autoPotEnabled = true;
+        private KeyCode _currentAutoPotToggleKey;
 
         private const float MIN_UPDATE_INTERVAL = 1f / 165f;
 
-        public AutoPot(MelonLogger.Instance logger, ModConfig config)
+        public AutoPot(MelonLogger.Instance logger, ModConfig config, SoundManager soundManager)
         {
             _logger = logger;
             _config = config;
+            _soundManager = soundManager;
             ParseAutoPotKey();
+            UpdateAutoPotToggleKey();
             StartInitialization();
         }
 
@@ -51,6 +57,23 @@ namespace AutoNexus.Features
                 _logger.Error($"Invalid AutoPotKey '{_config.AutoPotKey.Value}'. Reverting to default '1'. Exception: {ex.Message}");
                 _autoPotKey = (byte)KeyCode.Alpha1;
                 _config.AutoPotKey.Value = "1";
+            }
+        }
+
+        private void UpdateAutoPotToggleKey()
+        {
+            string keyString = _config.AutoPotToggleKey.Value.ToUpper();
+            if (keyString == "ENTER") keyString = "RETURN";
+
+            try
+            {
+                _currentAutoPotToggleKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), keyString, true);
+            }
+            catch (System.ArgumentException)
+            {
+                _logger.Error($"Invalid AutoPotToggleKey '{_config.AutoPotToggleKey.Value}' in config. Reverting to default 'H'.");
+                _currentAutoPotToggleKey = KeyCode.H;
+                _config.AutoPotToggleKey.Value = "H";
             }
         }
 
@@ -98,6 +121,16 @@ namespace AutoNexus.Features
 
         public void Update()
         {
+            if (Input.GetKeyDown(_currentAutoPotToggleKey))
+            {
+                _autoPotEnabled = !_autoPotEnabled;
+                _logger.Msg($"AutoPot toggled {(_autoPotEnabled ? "ON" : "OFF")}.");
+                _soundManager.PlayAutoPotToggleSound(_autoPotEnabled);
+            }
+
+            if (!_autoPotEnabled)
+                return;
+
             if (!ValidatePlayerState())
                 return;
 

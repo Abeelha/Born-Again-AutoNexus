@@ -60,7 +60,7 @@ namespace AutoNexus.Features
             {
                 _isDisconnectEnabled = !_isDisconnectEnabled;
                 _logger.Msg($"Disconnect functionality is now {(_isDisconnectEnabled ? "enabled" : "disabled")}.");
-                _soundManager.PlayToggleSound(_isDisconnectEnabled);
+                _soundManager.PlayAutoNexusToggleSound(_isDisconnectEnabled);
             }
         }
 

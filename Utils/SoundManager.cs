@@ -27,10 +27,25 @@ namespace AutoNexus.Utils
             }
         }
 
-        public void PlayToggleSound(bool isEnabled)
+        public void PlayAutoNexusToggleSound(bool isEnabled)
         {
-            string soundFilePath = isEnabled ? "Mods/sounds/enable.wav" : "Mods/sounds/disable.wav";
+            string soundFilePath = isEnabled ? "Mods/sounds/enableNexusInsta.wav" : "Mods/sounds/disableNexusInsta.wav";
+            if (System.IO.File.Exists(soundFilePath))
+            {
+                if (!PlaySound(soundFilePath, System.IntPtr.Zero, ModDefaults.Sound.SND_ASYNC | ModDefaults.Sound.SND_FILENAME))
+                {
+                    _logger.Error($"Failed to play sound file: {soundFilePath}");
+                }
+            }
+            else
+            {
+                _logger.Error($"Sound file not found: {soundFilePath}");
+            }
+        }
 
+        public void PlayAutoPotToggleSound(bool isEnabled)
+        {
+            string soundFilePath = isEnabled ? "Mods/sounds/enableAutoPot.wav" : "Mods/sounds/disableAutoPot.wav";
             if (System.IO.File.Exists(soundFilePath))
             {
                 if (!PlaySound(soundFilePath, System.IntPtr.Zero, ModDefaults.Sound.SND_ASYNC | ModDefaults.Sound.SND_FILENAME))

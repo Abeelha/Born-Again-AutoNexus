@@ -14,6 +14,7 @@ namespace AutoNexus.Configuration
         public MelonPreferences_Entry<string> ZoomOutKey { get; private set; }
         public MelonPreferences_Entry<float> AutoPotHealthThreshold { get; private set; }
         public MelonPreferences_Entry<string> AutoPotKey { get; private set; }
+        public MelonPreferences_Entry<string> AutoPotToggleKey { get; private set; }
 
         public void Initialize(MelonLogger.Instance logger)
         {
@@ -59,7 +60,9 @@ namespace AutoNexus.Configuration
             AutoPotHealthThreshold = _config.CreateEntry("AutoPotHealthThreshold", ModDefaults.AUTO_POT_HEALTH_THRESHOLD,
                 description: "Percentage of health (e.g., 0.40 = 40%) at which the AutoPot feature triggers");
             AutoPotKey = _config.CreateEntry("AutoPotKey", ModDefaults.AUTO_POT_KEY,
-                description: "Key to press for AutoPot. Enter a single letter or digit (e.g., 6 or A).");
+                description: "Key to press for AutoPot. Enter a single letter or digit (e.g., 1, 6 or A).");
+            AutoPotToggleKey = _config.CreateEntry("AutoPotToggleKey", ModDefaults.AUTO_POT_TOGGLE_KEY,
+                description: "Key to toggle the AutoPot feature on/off. Default is H.");
         }
 
         private void LogSettings(MelonLogger.Instance logger)
@@ -73,13 +76,12 @@ namespace AutoNexus.Configuration
             logger.Msg($"Grace Period (Default, fixed): {ModDefaults.GRACE_PERIOD_DEFAULT}s");
             logger.Msg($"Disconnect Key: {DisconnectKey.Value}");
             logger.Msg("=== Camera Settings ===");
-            logger.Msg($"Min PixelsPerUnit (fixed): {ModDefaults.Camera.MIN_PIXELS_PER_UNIT:F2}");
-            logger.Msg($"Max PixelsPerUnit (fixed): {ModDefaults.Camera.MAX_PIXELS_PER_UNIT:F2}");
             logger.Msg($"Zoom In Key: {ZoomInKey.Value}");
             logger.Msg($"Zoom Out Key: {ZoomOutKey.Value}");
             logger.Msg("=== AutoPot Settings ===");
             logger.Msg($"AutoPot Health Threshold: {AutoPotHealthThreshold.Value * 100:F2}%");
             logger.Msg($"AutoPot Key: {AutoPotKey.Value}");
+            logger.Msg($"AutoPot Toggle Key: {AutoPotToggleKey.Value}");
             logger.Msg("For a list of KeyCodes, visit: https://docs.unity3d.com/ScriptReference/KeyCode.html");
         }
     }
