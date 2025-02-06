@@ -12,7 +12,7 @@
         public const string PLAYER_OBJECT_NAME = "Character(Clone)";
 
         public const float AUTO_POT_HEALTH_THRESHOLD = 0.45f;
-        public const string AUTO_POT_KEY = "6";
+        public const string AUTO_POT_KEY = "1";
 
         public static class Camera
         {

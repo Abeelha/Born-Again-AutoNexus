@@ -17,12 +17,41 @@ namespace AutoNexus.Features
         private int _maxHealth = -1;
         private bool _hasUsedAutoPot;
         private bool _isSimulatingKeyPress;
+        private byte _autoPotKey;
 
         public AutoPot(MelonLogger.Instance logger, ModConfig config)
         {
             _logger = logger;
             _config = config;
+            ParseAutoPotKey();
             StartInitialization();
+        }
+        private void ParseAutoPotKey()
+        {
+            string keyString = _config.AutoPotKey.Value.Trim();
+            if (keyString.Length == 1)
+            {
+                char ch = keyString[0];
+                if (char.IsDigit(ch))
+                {
+                    keyString = "Alpha" + ch;
+                }
+                else if (char.IsLetter(ch))
+                {
+                    keyString = char.ToUpper(ch).ToString();
+                }
+            }
+            try
+            {
+                KeyCode keyCode = (KeyCode)System.Enum.Parse(typeof(KeyCode), keyString, true);
+                _autoPotKey = (byte)keyCode;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.Error($"Invalid AutoPotKey '{_config.AutoPotKey.Value}'. Reverting to default '1'. Exception: {ex.Message}");
+                _autoPotKey = (byte)KeyCode.Alpha1;
+                _config.AutoPotKey.Value = "1";
+            }
         }
 
         private void StartInitialization()
@@ -100,7 +129,6 @@ namespace AutoNexus.Features
                 _hasUsedAutoPot = false;
             }
 
-            // Update max health if current health is higher
             if (currentHealth > _maxHealth)
             {
                 _maxHealth = currentHealth;
@@ -112,10 +140,9 @@ namespace AutoNexus.Features
         {
             _isSimulatingKeyPress = true;
             
-            // Press '1' key (0x31)
-            KeyDown(0x31);
+            KeyDown(_autoPotKey);
             yield return new WaitForSeconds(0.1f);
-            KeyUp(0x31);
+            KeyUp(_autoPotKey);
 
             _logger.Msg("AutoPot: Health potion key press simulation complete.");
             _isSimulatingKeyPress = false;
