@@ -13,6 +13,7 @@ namespace AutoNexus
         private KeyboardController _keyboardController;
         private SoundManager _soundManager;
         private NameChanger _nameChanger;
+        private AntiAFK _AntiAFK;
 
         public override void OnInitializeMelon()
         {
@@ -23,8 +24,9 @@ namespace AutoNexus
             _healthMonitor = new HealthMonitor(_config, LoggerInstance);
             _cameraController = new CameraController(_config, LoggerInstance);
             _keyboardController = new KeyboardController(_config, LoggerInstance, _soundManager);
-
             _nameChanger = new NameChanger(_config, LoggerInstance, "Character(Clone)");
+
+            _AntiAFK = new AntiAFK(LoggerInstance);
 
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
         }
@@ -32,9 +34,9 @@ namespace AutoNexus
         public override void OnUpdate()
         {
             _nameChanger?.Update();
-
             _keyboardController.Update();
             _cameraController.Update();
+            _AntiAFK?.Update();
         }
 
         public override void OnApplicationQuit()
