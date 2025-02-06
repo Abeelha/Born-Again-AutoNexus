@@ -16,19 +16,22 @@ namespace AutoNexus.Features
         private int _maxHealth = -1;
         private bool _gracePeriodActive;
         private bool _isMonitoringActive;
-        private object _monitoringCoroutine;
         private int _lastHealthValue = -1;
         private float _healthStableTimer = 0f;
         private bool _isTrackingHealth = false;
-        private bool _isHealthIncreasing = false;
         private int _previousStableHealth = -1;
         private int _waitingLogCounter = 0;
         private const int MAX_WAITING_LOGS = 3;
+
+        private float _lastUpdateTime;
+        private float _accumulatedTime;
+        private const float MIN_UPDATE_INTERVAL = 1f / 165f;
 
         public HealthMonitor(ModConfig config, MelonLogger.Instance logger)
         {
             _config = config;
             _logger = logger;
+            _lastUpdateTime = Time.realtimeSinceStartup;
             StartInitialization();
         }
 
@@ -39,8 +42,6 @@ namespace AutoNexus.Features
 
         private IEnumerator InitializePlayer()
         {
-            var waitInterval = new WaitForSeconds(_config.InitCheckInterval.Value);
-
             while (true)
             {
                 if (TryInitializePlayer())
@@ -54,15 +55,14 @@ namespace AutoNexus.Features
                     _logger.Msg("Waiting for player character...");
                     _waitingLogCounter++;
                 }
-                yield return waitInterval;
+                yield return new WaitForSecondsRealtime(_config.InitCheckInterval.Value);
             }
         }
 
         private bool TryInitializePlayer()
         {
             _playerCharacter = GameObject.Find(ModDefaults.PLAYER_OBJECT_NAME);
-            if (_playerCharacter == null)
-                return false;
+            if (_playerCharacter == null) return false;
 
             _characterComponent = _playerCharacter.GetComponent<Character>();
             if (_characterComponent == null)
@@ -74,56 +74,32 @@ namespace AutoNexus.Features
             var entity = _playerCharacter.GetComponent<Il2Cpp.Entity>();
             if (entity != null)
             {
-                _logger.Msg($"Setting entity name and GUI name to: {_config.PlayerName.Value}");
                 entity.SetEntityName(_config.PlayerName.Value);
                 entity.SetEntityGuiName(_config.PlayerName.Value);
-            }
-            else
-            {
-                _logger.Warning("Entity component not found on player character during initialization.");
+                _logger.Msg($"Player character initialized with custom name: {_config.PlayerName.Value}");
             }
 
-            _logger.Msg($"Player character initialized with custom name: {_config.PlayerName.Value}");
             return true;
         }
 
-        private void StartHealthMonitoring()
+        public void Update()
         {
-            if (_isMonitoringActive) return;
+            if (!_isMonitoringActive || _characterComponent == null) return;
 
-            _isMonitoringActive = true;
-            _logger.Msg("Starting health monitoring...");
-            _monitoringCoroutine = MelonCoroutines.Start(MonitorPlayerHealth());
-        }
+            float currentTime = Time.realtimeSinceStartup;
+            float deltaTime = currentTime - _lastUpdateTime;
+            _lastUpdateTime = currentTime;
 
-        private void StopHealthMonitoring()
-        {
-            if (!_isMonitoringActive) return;
+            _accumulatedTime += deltaTime;
 
-            _isMonitoringActive = false;
-            if (_monitoringCoroutine != null)
+            if (_accumulatedTime >= MIN_UPDATE_INTERVAL)
             {
-                MelonCoroutines.Stop(_monitoringCoroutine);
-                _monitoringCoroutine = null;
-            }
-        }
-
-        private IEnumerator MonitorPlayerHealth()
-        {
-            var waitInterval = new WaitForSeconds(_config.UpdateInterval.Value);
-            int lastLoggedHealth = -1;
-
-            while (_isMonitoringActive)
-            {
-                if (!ValidatePlayerState())
-                {
-                    yield return waitInterval;
-                    continue;
-                }
+                if (!ValidatePlayerState()) return;
 
                 try
                 {
-                    ProcessHealthCheck(ref lastLoggedHealth);
+                    ProcessHealthCheck();
+                    UpdateHealthStability(deltaTime);
                 }
                 catch (System.Exception ex)
                 {
@@ -131,8 +107,21 @@ namespace AutoNexus.Features
                     StopHealthMonitoring();
                 }
 
-                yield return waitInterval;
+                _accumulatedTime = 0f;
             }
+        }
+
+        private void StartHealthMonitoring()
+        {
+            if (_isMonitoringActive) return;
+            _isMonitoringActive = true;
+            _logger.Msg("Starting health monitoring...");
+        }
+
+        private void StopHealthMonitoring()
+        {
+            if (!_isMonitoringActive) return;
+            _isMonitoringActive = false;
         }
 
         private bool ValidatePlayerState()
@@ -145,18 +134,22 @@ namespace AutoNexus.Features
                 return false;
 
             _characterComponent = _playerCharacter.GetComponent<Character>();
-            _logger.Msg("Player reconnected. Starting grace period...");
-            StartGracePeriod(_config.GracePeriodDefault.Value);
-            return true;
+            if (_characterComponent != null)
+            {
+                _logger.Msg("Player reconnected. Starting grace period...");
+                StartGracePeriod(_config.GracePeriodDefault.Value);
+                return true;
+            }
+            return false;
         }
 
-        private void ProcessHealthCheck(ref int lastLoggedHealth)
+        private void ProcessHealthCheck()
         {
             int currentHealth = _characterComponent.Health;
 
-            if (currentHealth != lastLoggedHealth)
+            if (currentHealth != _lastHealthValue)
             {
-                lastLoggedHealth = currentHealth;
+                _lastHealthValue = currentHealth;
 
                 if (currentHealth <= _maxHealth * _config.HealthThreshold.Value)
                 {
@@ -164,16 +157,16 @@ namespace AutoNexus.Features
                 }
             }
 
-            UpdateHealthStability(currentHealth);
-
             if (ShouldTriggerNexus(currentHealth))
             {
                 DisconnectFromWorld();
             }
         }
 
-        private void UpdateHealthStability(int currentHealth)
+        private void UpdateHealthStability(float deltaTime)
         {
+            int currentHealth = _characterComponent.Health;
+
             if (_lastHealthValue == -1)
             {
                 _lastHealthValue = currentHealth;
@@ -182,18 +175,9 @@ namespace AutoNexus.Features
                 return;
             }
 
-            if (_lastHealthValue != currentHealth)
-            {
-                _isHealthIncreasing = currentHealth > _lastHealthValue;
-                _lastHealthValue = currentHealth;
-                _healthStableTimer = 0f;
-                _isTrackingHealth = true;
-                return;
-            }
-
             if (_isTrackingHealth)
             {
-                _healthStableTimer += _config.UpdateInterval.Value;
+                _healthStableTimer += deltaTime;
 
                 if (_healthStableTimer >= _config.HealthStabilityTime.Value)
                 {
@@ -207,12 +191,18 @@ namespace AutoNexus.Features
                     }
                 }
             }
+            else if (currentHealth != _lastHealthValue)
+            {
+                _lastHealthValue = currentHealth;
+                _healthStableTimer = 0f;
+                _isTrackingHealth = true;
+            }
         }
 
         private bool ShouldTriggerNexus(int currentHealth)
         {
-            return !_gracePeriodActive
-                && _maxHealth > 0
+            return !_gracePeriodActive 
+                && _maxHealth > 0 
                 && currentHealth <= _maxHealth * _config.HealthThreshold.Value;
         }
 
@@ -246,7 +236,7 @@ namespace AutoNexus.Features
 
         private IEnumerator GracePeriodCooldown(float duration)
         {
-            yield return new WaitForSeconds(duration);
+            yield return new WaitForSecondsRealtime(duration);
             _gracePeriodActive = false;
             _logger.Msg("Grace period ended.");
         }

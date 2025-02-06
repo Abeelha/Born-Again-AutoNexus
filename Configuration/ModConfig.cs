@@ -22,6 +22,8 @@ namespace AutoNexus.Configuration
         public MelonPreferences_Entry<float> MaxPixelsPerUnit { get; private set; }
         public MelonPreferences_Entry<string> ZoomInKey { get; private set; }
         public MelonPreferences_Entry<string> ZoomOutKey { get; private set; }
+        public MelonPreferences_Entry<float> AutoPotHealthThreshold { get; private set; }
+        public MelonPreferences_Entry<string> AutoPotKey { get; private set; }
 
         public void Initialize(MelonLogger.Instance logger)
         {
@@ -31,6 +33,7 @@ namespace AutoNexus.Configuration
             InitializeKeyBindings();
             InitializePlayerSettings();
             InitializeCameraSettings();
+            InitializeAutoPotSettings();
 
             LogSettings(logger);
         }
@@ -81,6 +84,14 @@ namespace AutoNexus.Configuration
                 description: "Key to zoom out");
         }
 
+        private void InitializeAutoPotSettings()
+        {
+            AutoPotHealthThreshold = _config.CreateEntry("AutoPotHealthThreshold", 0.45f,
+                description: "Percentage of health (0.45 = 45%) at which the AutoPot feature triggers");
+            AutoPotKey = _config.CreateEntry("AutoPotKey", "Alpha1",
+                description: "Key to press for AutoPot. Use Unity KeyCode names (e.g., Alpha1 for '1').");
+        }
+
         private void LogSettings(MelonLogger.Instance logger)
         {
             logger.Msg("=== Customization Settings ===");
@@ -101,6 +112,9 @@ namespace AutoNexus.Configuration
             logger.Msg($"Max PixelsPerUnit: {MaxPixelsPerUnit.Value}");
             logger.Msg($"Zoom In Key: {ZoomInKey.Value}");
             logger.Msg($"Zoom Out Key: {ZoomOutKey.Value}");
+            logger.Msg("=== AutoPot Settings ===");
+            logger.Msg($"AutoPot Health Threshold: {AutoPotHealthThreshold.Value * 100}%");
+            logger.Msg($"AutoPot Key: {AutoPotKey.Value}");
             logger.Msg("For a list of KeyCodes, visit: https://docs.unity3d.com/ScriptReference/KeyCode.html");
         }
     }
