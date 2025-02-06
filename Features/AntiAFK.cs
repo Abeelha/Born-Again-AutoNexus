@@ -12,7 +12,7 @@ namespace AutoNexus.Features
         private bool _isSimulating;
 
         private const float IdleThreshold = 115f;
-        private const float DKeyPressDuration = 0.3f;
+        private const float DKeyPressDuration = 0.1f;
 
         public AntiAFK(MelonLogger.Instance logger)
         {
