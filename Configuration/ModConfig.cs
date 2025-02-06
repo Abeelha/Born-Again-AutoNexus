@@ -8,8 +8,6 @@ namespace AutoNexus.Configuration
         private MelonPreferences_Category _config;
 
         public MelonPreferences_Entry<float> HealthThreshold { get; private set; }
-        public MelonPreferences_Entry<float> UpdateInterval { get; private set; }
-        public MelonPreferences_Entry<float> GracePeriodLowHealth { get; private set; }
         public MelonPreferences_Entry<float> GracePeriodDefault { get; private set; }
         public MelonPreferences_Entry<float> InitCheckInterval { get; private set; }
         public MelonPreferences_Entry<float> HealthStabilityTime { get; private set; }
@@ -42,16 +40,12 @@ namespace AutoNexus.Configuration
         {
             HealthThreshold = _config.CreateEntry("HealthThreshold", ModDefaults.HEALTH_THRESHOLD,
                 description: "Percentage of health (0.2 = 20%) at which to trigger nexus");
-            UpdateInterval = _config.CreateEntry("UpdateInterval", ModDefaults.UPDATE_INTERVAL,
-                description: "How often to check health (in seconds)");
-            GracePeriodLowHealth = _config.CreateEntry("GracePeriodLowHealth", ModDefaults.GRACE_PERIOD_LOW_HEALTH,
-                description: "Grace period duration for low health (in seconds)");
-            GracePeriodDefault = _config.CreateEntry("GracePeriodDefault", ModDefaults.GRACE_PERIOD_DEFAULT,
-                description: "Default grace period duration (in seconds)");
             InitCheckInterval = _config.CreateEntry("InitCheckInterval", ModDefaults.INIT_CHECK_INTERVAL,
                 description: "How often to check for player initialization (in seconds)");
             HealthStabilityTime = _config.CreateEntry("HealthStabilityTime", ModDefaults.HEALTH_STABILITY_TIME,
                 description: "Time health needs to be stable to update max health (in seconds)");
+            GracePeriodDefault = _config.CreateEntry("GracePeriodDefault", ModDefaults.GRACE_PERIOD_DEFAULT,
+                description: "Default grace period duration (in seconds)");
         }
 
         private void InitializeKeyBindings()
@@ -86,10 +80,11 @@ namespace AutoNexus.Configuration
 
         private void InitializeAutoPotSettings()
         {
-            AutoPotHealthThreshold = _config.CreateEntry("AutoPotHealthThreshold", 0.45f,
-                description: "Percentage of health (0.45 = 45%) at which the AutoPot feature triggers");
-            AutoPotKey = _config.CreateEntry("AutoPotKey", "Alpha1",
-                description: "Key to press for AutoPot. Use Unity KeyCode names (e.g., Alpha1 for '1').");
+            AutoPotHealthThreshold = _config.CreateEntry("AutoPotHealthThreshold", ModDefaults.AUTO_POT_HEALTH_THRESHOLD,
+                description: "Percentage of health (e.g., 0.45 = 45%) at which the AutoPot feature triggers");
+            // The default now is "1" but the user may enter a single character such as "6" or "A"
+            AutoPotKey = _config.CreateEntry("AutoPotKey", ModDefaults.AUTO_POT_KEY,
+                description: "Key to press for AutoPot. Enter a single letter or digit (e.g., 6 or A).");
         }
 
         private void LogSettings(MelonLogger.Instance logger)
@@ -98,11 +93,9 @@ namespace AutoNexus.Configuration
             logger.Msg($"Player Name: {PlayerName.Value}");
             logger.Msg("=== AutoNexus Settings ===");
             logger.Msg($"Health Threshold: {HealthThreshold.Value * 100}%");
-            logger.Msg($"Update Interval: {UpdateInterval.Value}s");
-            logger.Msg($"Grace Period (Low Health): {GracePeriodLowHealth.Value}s");
-            logger.Msg($"Grace Period (Default): {GracePeriodDefault.Value}s");
             logger.Msg($"Init Check Interval: {InitCheckInterval.Value}s");
             logger.Msg($"Health Stability Time: {HealthStabilityTime.Value}s");
+            logger.Msg($"Grace Period (Default): {GracePeriodDefault.Value}s");
             logger.Msg($"Disconnect Key: {DisconnectKey.Value}");
             logger.Msg($"Toggle Chat Key: {ToggleChatKey.Value}");
             logger.Msg("=== Camera Settings ===");
