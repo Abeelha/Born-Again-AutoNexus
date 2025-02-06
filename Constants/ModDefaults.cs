@@ -8,10 +8,10 @@
         public const float HEALTH_STABILITY_TIME = 2f;
         public const string DISCONNECT_KEY = "F";
         public const string TOGGLE_CHAT_KEY = "Return";
-        public const string NEW_PLAYER_GUI_NAME = "Juix </3";
+        public const string NEW_PLAYER_GUI_NAME = "Custom Name :D";
         public const string PLAYER_OBJECT_NAME = "Character(Clone)";
 
-        public const float AUTO_POT_HEALTH_THRESHOLD = 0.45f;
+        public const float AUTO_POT_HEALTH_THRESHOLD = 0.40f;
         public const string AUTO_POT_KEY = "1";
 
         public static class Camera

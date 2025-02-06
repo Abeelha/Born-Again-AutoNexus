@@ -15,7 +15,6 @@ namespace AutoNexus.Features
         private GameObject _playerCharacter;
         private Character _characterComponent;
         private int _maxHealth = -1;
-        private bool _hasUsedAutoPot;
         private bool _isSimulatingKeyPress;
         private byte _autoPotKey;
 
@@ -61,7 +60,7 @@ namespace AutoNexus.Features
 
         private IEnumerator InitializePlayer()
         {
-            var waitInterval = new WaitForSeconds(_config.InitCheckInterval.Value);
+            var waitInterval = new WaitForSeconds(ModDefaults.INIT_CHECK_INTERVAL);
 
             while (true)
             {
@@ -118,17 +117,11 @@ namespace AutoNexus.Features
             int currentHealth = _characterComponent.Health;
             float healthRatio = _maxHealth > 0 ? (float)currentHealth / _maxHealth : 1f;
 
-            if (healthRatio <= _config.AutoPotHealthThreshold.Value && !_hasUsedAutoPot && !_isSimulatingKeyPress)
+            if (healthRatio <= _config.AutoPotHealthThreshold.Value && !_isSimulatingKeyPress)
             {
                 _logger.Msg($"AutoPot: Health is low ({currentHealth}/{_maxHealth} = {healthRatio:P}). Using health potion.");
                 MelonCoroutines.Start(SimulateKeyPress());
-                _hasUsedAutoPot = true;
             }
-            else if (healthRatio > _config.AutoPotHealthThreshold.Value)
-            {
-                _hasUsedAutoPot = false;
-            }
-
             if (currentHealth > _maxHealth)
             {
                 _maxHealth = currentHealth;

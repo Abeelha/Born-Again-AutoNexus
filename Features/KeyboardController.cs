@@ -89,7 +89,7 @@ namespace AutoNexus.Features
 
         private void UpdateToggleChatKey()
         {
-            string keyString = _config.ToggleChatKey.Value.ToUpper();
+            string keyString = ModDefaults.TOGGLE_CHAT_KEY.ToUpper();
             if (keyString == "ENTER") keyString = "RETURN";
 
             try
@@ -98,9 +98,8 @@ namespace AutoNexus.Features
             }
             catch (System.ArgumentException)
             {
-                _logger.Error($"Invalid KeyCode '{_config.ToggleChatKey.Value}' in config. Reverting to default key 'Enter'.");
+                _logger.Error("Invalid ToggleChatKey in defaults. Reverting to default key 'Return'.");
                 _currentToggleChatKey = KeyCode.Return;
-                _config.ToggleChatKey.Value = ModDefaults.TOGGLE_CHAT_KEY;
             }
         }
 

@@ -20,7 +20,7 @@ namespace AutoNexus.Features
         {
             _config = config;
             _logger = logger;
-            _lastUsedPixelsPerUnit = config.PixelsPerUnit.Value;
+            _lastUsedPixelsPerUnit = ModDefaults.Camera.DEFAULT_PIXELS_PER_UNIT;
             UpdateZoomKeys();
         }
 
@@ -66,25 +66,25 @@ namespace AutoNexus.Features
                 if ((scrollDelta > 0 && _config.ZoomInKey.Value.ToUpper() == "MOUSESCROLLUP") ||
                     (scrollDelta < 0 && _config.ZoomOutKey.Value.ToUpper() == "MOUSESCROLLDOWN"))
                 {
-                    newPixelsPerUnit += _config.PixelsPerUnitStep.Value * Mathf.Sign(scrollDelta);
+                    newPixelsPerUnit += ModDefaults.Camera.PIXELS_PER_UNIT_STEP * Mathf.Sign(scrollDelta);
                     adjustmentMade = true;
                 }
             }
 
             if (_currentZoomInKey != KeyCode.None && Input.GetKeyDown(_currentZoomInKey))
             {
-                newPixelsPerUnit += _config.PixelsPerUnitStep.Value;
+                newPixelsPerUnit += ModDefaults.Camera.PIXELS_PER_UNIT_STEP;
                 adjustmentMade = true;
             }
             else if (_currentZoomOutKey != KeyCode.None && Input.GetKeyDown(_currentZoomOutKey))
             {
-                newPixelsPerUnit -= _config.PixelsPerUnitStep.Value;
+                newPixelsPerUnit -= ModDefaults.Camera.PIXELS_PER_UNIT_STEP;
                 adjustmentMade = true;
             }
 
             if (adjustmentMade)
             {
-                newPixelsPerUnit = Mathf.Clamp(newPixelsPerUnit, _config.MinPixelsPerUnit.Value, _config.MaxPixelsPerUnit.Value);
+                newPixelsPerUnit = Mathf.Clamp(newPixelsPerUnit, ModDefaults.Camera.MIN_PIXELS_PER_UNIT, ModDefaults.Camera.MAX_PIXELS_PER_UNIT);
                 if (System.Math.Abs(newPixelsPerUnit - _worldCamera.PixelsPerUnit) > 0.01f)
                 {
                     _worldCamera.PixelsPerUnit = newPixelsPerUnit;

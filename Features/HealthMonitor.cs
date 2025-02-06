@@ -55,7 +55,7 @@ namespace AutoNexus.Features
                     _logger.Msg("Waiting for player character...");
                     _waitingLogCounter++;
                 }
-                yield return new WaitForSecondsRealtime(_config.InitCheckInterval.Value);
+                yield return new WaitForSecondsRealtime(ModDefaults.INIT_CHECK_INTERVAL);
             }
         }
 
@@ -137,7 +137,7 @@ namespace AutoNexus.Features
             if (_characterComponent != null)
             {
                 _logger.Msg("Player reconnected. Starting grace period...");
-                StartGracePeriod(_config.GracePeriodDefault.Value);
+                StartGracePeriod(ModDefaults.GRACE_PERIOD_DEFAULT);
                 return true;
             }
             return false;
@@ -179,7 +179,7 @@ namespace AutoNexus.Features
             {
                 _healthStableTimer += deltaTime;
 
-                if (_healthStableTimer >= _config.HealthStabilityTime.Value)
+                if (_healthStableTimer >= ModDefaults.HEALTH_STABILITY_TIME)
                 {
                     _isTrackingHealth = false;
 
@@ -187,7 +187,7 @@ namespace AutoNexus.Features
                     {
                         _previousStableHealth = currentHealth;
                         _maxHealth = currentHealth;
-                        _logger.Msg($"Max Health Updated: {_maxHealth} (stable for {_config.HealthStabilityTime.Value}s)");
+                        _logger.Msg($"Max Health Updated: {_maxHealth} (stable for {ModDefaults.HEALTH_STABILITY_TIME}s)");
                     }
                 }
             }
