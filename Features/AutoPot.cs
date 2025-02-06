@@ -25,6 +25,7 @@ namespace AutoNexus.Features
         private KeyCode _currentAutoPotToggleKey;
 
         private const float MIN_UPDATE_INTERVAL = 1f / 165f;
+        private const float AUTO_POT_DELAY = 0.5f;
 
         public AutoPot(MelonLogger.Instance logger, ModConfig config, SoundManager soundManager)
         {
@@ -183,6 +184,7 @@ namespace AutoNexus.Features
             yield return new WaitForSeconds(0.1f);
             KeyUp(_autoPotKey);
 
+            yield return new WaitForSeconds(AUTO_POT_DELAY);
             _logger.Msg("AutoPot: Health potion key press simulation complete.");
             _isSimulatingKeyPress = false;
         }
