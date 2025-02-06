@@ -8,7 +8,7 @@ namespace AutoNexus
     public class AutonexusMod : MelonMod
     {
         private ModConfig _config;
-        private HealthMonitor _healthMonitor;
+        private Features.AutoNexus _autoNexus;
         private CameraController _cameraController;
         private KeyboardController _keyboardController;
         private SoundManager _soundManager;
@@ -22,7 +22,7 @@ namespace AutoNexus
             _config.Initialize(LoggerInstance);
 
             _soundManager = new SoundManager(LoggerInstance);
-            _healthMonitor = new HealthMonitor(_config, LoggerInstance);
+            _autoNexus = new Features.AutoNexus(_config, LoggerInstance);
             _cameraController = new CameraController(_config, LoggerInstance);
             _keyboardController = new KeyboardController(_config, LoggerInstance, _soundManager);
             _nameChanger = new NameChanger(_config, LoggerInstance, "Character(Clone)");
@@ -38,7 +38,7 @@ namespace AutoNexus
             _cameraController.Update();
             _antiAFK?.Update();
             _autoPot?.Update();
-            _healthMonitor?.Update();
+            _autoNexus?.Update();
         }
 
         public override void OnApplicationQuit()

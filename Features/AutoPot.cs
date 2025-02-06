@@ -5,6 +5,7 @@ using MelonLoader;
 using Il2Cpp;
 using AutoNexus.Configuration;
 using AutoNexus.Constants;
+using AutoNexus.Helpers;
 
 namespace AutoNexus.Features
 {
@@ -14,9 +15,12 @@ namespace AutoNexus.Features
         private readonly ModConfig _config;
         private GameObject _playerCharacter;
         private Character _characterComponent;
-        private int _maxHealth = -1;
+        private HealthMonitorState _monitorState = new HealthMonitorState();
         private bool _isSimulatingKeyPress;
         private byte _autoPotKey;
+        private bool _gracePeriodActive;
+
+        private const float MIN_UPDATE_INTERVAL = 1f / 165f;
 
         public AutoPot(MelonLogger.Instance logger, ModConfig config)
         {
@@ -25,6 +29,7 @@ namespace AutoNexus.Features
             ParseAutoPotKey();
             StartInitialization();
         }
+
         private void ParseAutoPotKey()
         {
             string keyString = _config.AutoPotKey.Value.Trim();
@@ -32,13 +37,9 @@ namespace AutoNexus.Features
             {
                 char ch = keyString[0];
                 if (char.IsDigit(ch))
-                {
                     keyString = "Alpha" + ch;
-                }
                 else if (char.IsLetter(ch))
-                {
                     keyString = char.ToUpper(ch).ToString();
-                }
             }
             try
             {
@@ -86,15 +87,23 @@ namespace AutoNexus.Features
                 return false;
             }
 
-            _maxHealth = _characterComponent.Health;
-            _logger.Msg($"AutoPot: Initial max health set to {_maxHealth}");
+            int currentHealth = _characterComponent.Health;
+            _monitorState.LastHealthValue = currentHealth;
+            _monitorState.PreviousStableHealth = currentHealth;
+            _monitorState.MaxHealth = currentHealth;
+
+            _logger.Msg($"AutoPot: Initial max health set to {_monitorState.MaxHealth}");
             return true;
         }
 
         public void Update()
         {
+            // Validate the player state. If not valid, skip update.
             if (!ValidatePlayerState())
                 return;
+
+            // Update the health monitoring state (using our helper).
+            HealthMonitoringHelper.UpdateStability(_monitorState, _characterComponent.Health, MIN_UPDATE_INTERVAL, ModDefaults.HEALTH_STABILITY_TIME, _logger);
 
             ProcessHealthCheck();
         }
@@ -102,30 +111,39 @@ namespace AutoNexus.Features
         private bool ValidatePlayerState()
         {
             if (_playerCharacter != null && _playerCharacter.activeSelf)
-                return true;
+            {
+                return !_gracePeriodActive;
+            }
 
             _playerCharacter = GameObject.Find(ModDefaults.PLAYER_OBJECT_NAME);
             if (_playerCharacter == null)
                 return false;
 
             _characterComponent = _playerCharacter.GetComponent<Character>();
-            return _characterComponent != null;
+            if (_characterComponent != null)
+            {
+                _logger.Msg("Player reconnected. Starting grace period...");
+                StartGracePeriod(ModDefaults.GRACE_PERIOD_DEFAULT);
+                return false;
+            }
+            return false;
         }
 
         private void ProcessHealthCheck()
         {
             int currentHealth = _characterComponent.Health;
-            float healthRatio = _maxHealth > 0 ? (float)currentHealth / _maxHealth : 1f;
+            float healthRatio = _monitorState.MaxHealth > 0 ? (float)currentHealth / _monitorState.MaxHealth : 1f;
 
-            if (healthRatio <= _config.AutoPotHealthThreshold.Value && !_isSimulatingKeyPress)
+            if (!_gracePeriodActive && healthRatio <= _config.AutoPotHealthThreshold.Value && !_isSimulatingKeyPress)
             {
-                _logger.Msg($"AutoPot: Health is low ({currentHealth}/{_maxHealth} = {healthRatio:P}). Using health potion.");
+                _logger.Msg($"AutoPot: Health is low ({currentHealth}/{_monitorState.MaxHealth} = {healthRatio:P}). Using health potion.");
                 MelonCoroutines.Start(SimulateKeyPress());
             }
-            if (currentHealth > _maxHealth)
+
+            if (currentHealth > _monitorState.MaxHealth)
             {
-                _maxHealth = currentHealth;
-                _logger.Msg($"AutoPot: Max health updated to {_maxHealth}");
+                _monitorState.MaxHealth = currentHealth;
+                _logger.Msg($"AutoPot: Max health updated to {_monitorState.MaxHealth}");
             }
         }
 
@@ -141,21 +159,35 @@ namespace AutoNexus.Features
             _isSimulatingKeyPress = false;
         }
 
+        private void StartGracePeriod(float duration)
+        {
+            _gracePeriodActive = true;
+            _logger.Msg($"Grace period: {duration}s");
+            MelonCoroutines.Start(GracePeriodCooldown(duration));
+        }
+
+        private IEnumerator GracePeriodCooldown(float duration)
+        {
+            yield return new WaitForSecondsRealtime(duration);
+            _gracePeriodActive = false;
+            _logger.Msg("Grace period ended.");
+        }
+
         #region keybd_event Interop
         [DllImport("user32.dll", SetLastError = true)]
-        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, System.UIntPtr dwExtraInfo);
 
         private const uint KEYEVENTF_KEYDOWN = 0x0;
         private const uint KEYEVENTF_KEYUP = 0x2;
 
         private void KeyDown(byte vk)
         {
-            keybd_event(vk, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+            keybd_event(vk, 0, KEYEVENTF_KEYDOWN, System.UIntPtr.Zero);
         }
 
         private void KeyUp(byte vk)
         {
-            keybd_event(vk, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(vk, 0, KEYEVENTF_KEYUP, System.UIntPtr.Zero);
         }
         #endregion
     }
