@@ -15,7 +15,7 @@ namespace AutoNexus.Features
         private readonly ModConfig _config;
         private GameObject _playerCharacter;
         private Character _characterComponent;
-        private HealthMonitorState _monitorState = new HealthMonitorState();
+        private HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
         private bool _isSimulatingKeyPress;
         private byte _autoPotKey;
         private bool _gracePeriodActive;
@@ -98,22 +98,17 @@ namespace AutoNexus.Features
 
         public void Update()
         {
-            // Validate the player state. If not valid, skip update.
             if (!ValidatePlayerState())
                 return;
 
-            // Update the health monitoring state (using our helper).
             HealthMonitoringHelper.UpdateStability(_monitorState, _characterComponent.Health, MIN_UPDATE_INTERVAL, ModDefaults.HEALTH_STABILITY_TIME, _logger);
-
             ProcessHealthCheck();
         }
 
         private bool ValidatePlayerState()
         {
             if (_playerCharacter != null && _playerCharacter.activeSelf)
-            {
                 return !_gracePeriodActive;
-            }
 
             _playerCharacter = GameObject.Find(ModDefaults.PLAYER_OBJECT_NAME);
             if (_playerCharacter == null)

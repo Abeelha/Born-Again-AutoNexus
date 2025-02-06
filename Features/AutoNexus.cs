@@ -14,8 +14,8 @@ namespace AutoNexus.Features
         private readonly MelonLogger.Instance _logger;
         private GameObject _playerCharacter;
         private Character _characterComponent;
-        private HealthMonitorState _monitorState = new HealthMonitorState();
-        
+        private HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
+
         private bool _gracePeriodActive;
         private bool _isMonitoringActive;
         private object _monitoringCoroutine;
@@ -198,11 +198,7 @@ namespace AutoNexus.Features
         {
             int currentHealth = _characterComponent.Health;
 
-            if (currentHealth != _monitorState.LastHealthValue)
-            {
-                _monitorState.LastHealthValue = currentHealth;
-                HealthMonitoringHelper.CheckCriticalHealth(currentHealth, _monitorState.MaxHealth, _config.HealthThreshold.Value, _logger);
-            }
+            HealthMonitoringHelper.CheckCriticalHealth(currentHealth, _monitorState.MaxHealth, _config.HealthThreshold.Value, _logger);
 
             if (ShouldTriggerNexus(currentHealth))
             {
@@ -228,8 +224,8 @@ namespace AutoNexus.Features
 
         private bool ShouldTriggerNexus(int currentHealth)
         {
-            return !_gracePeriodActive 
-                && _monitorState.MaxHealth > 0 
+            return !_gracePeriodActive
+                && _monitorState.MaxHealth > 0
                 && currentHealth <= _monitorState.MaxHealth * _config.HealthThreshold.Value;
         }
 

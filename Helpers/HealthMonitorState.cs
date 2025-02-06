@@ -13,6 +13,8 @@ namespace AutoNexus.Helpers
 
     public static class HealthMonitoringHelper
     {
+        public static HealthMonitorState SharedState = new HealthMonitorState();
+
         public static void UpdateStability(HealthMonitorState state, int currentHealth, float deltaTime, float stabilityTime, MelonLogger.Instance logger)
         {
             if (state.LastHealthValue == -1)
