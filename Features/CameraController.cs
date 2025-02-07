@@ -11,6 +11,7 @@ namespace AutoNexus.Features
     {
         private readonly ModConfig _config;
         private readonly MelonLogger.Instance _logger;
+        private readonly RoofRemover _roofRemover;
         private WorldCamera _worldCamera;
         private Camera _mainCamera;
         private KeyCode _currentZoomInKey;
@@ -19,10 +20,11 @@ namespace AutoNexus.Features
         private bool _hasInitializedZoom;
         private bool _hasCameraSetup;
 
-        public CameraController(ModConfig config, MelonLogger.Instance logger)
+        public CameraController(ModConfig config, MelonLogger.Instance logger, RoofRemover roofRemover)
         {
             _config = config;
             _logger = logger;
+            _roofRemover = roofRemover;
             _lastUsedPixelsPerUnit = ModDefaults.Camera.DEFAULT_PIXELS_PER_UNIT;
             UpdateZoomKeys();
         }
@@ -124,6 +126,9 @@ namespace AutoNexus.Features
                     _worldCamera.PixelsPerUnit = newPixelsPerUnit;
                     _lastUsedPixelsPerUnit = newPixelsPerUnit;
                     _logger.Msg($"Camera Zoom Updated: PixelsPerUnit = {newPixelsPerUnit}");
+                    
+                    // Force roof removal after zoom change
+                    _roofRemover.ForceRoofRemoval();
                 }
             }
         }
