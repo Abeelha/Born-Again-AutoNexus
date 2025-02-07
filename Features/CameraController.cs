@@ -3,6 +3,7 @@ using AutoNexus.Configuration;
 using MelonLoader;
 using AutoNexus.Constants;
 using Il2Cpp;
+using System.Collections;
 
 namespace AutoNexus.Features
 {
@@ -11,6 +12,7 @@ namespace AutoNexus.Features
         private readonly ModConfig _config;
         private readonly MelonLogger.Instance _logger;
         private WorldCamera _worldCamera;
+        private Camera _mainCamera;
         private KeyCode _currentZoomInKey;
         private KeyCode _currentZoomOutKey;
         private float _lastUsedPixelsPerUnit;
@@ -22,11 +24,14 @@ namespace AutoNexus.Features
             _logger = logger;
             _lastUsedPixelsPerUnit = ModDefaults.Camera.DEFAULT_PIXELS_PER_UNIT;
             UpdateZoomKeys();
+            MelonCoroutines.Start(InitializeInteriorVisibility());
         }
 
         public void Reset()
         {
             _worldCamera = null;
+            _mainCamera = null;
+            MelonCoroutines.Start(InitializeInteriorVisibility());
         }
 
         public void Update()
@@ -35,6 +40,7 @@ namespace AutoNexus.Features
                 return;
 
             HandleZoomAdjustments();
+            UpdateInteriorVisibility();
         }
 
         private bool TryInitializeCamera()
@@ -51,8 +57,69 @@ namespace AutoNexus.Features
                     _hasInitializedZoom = true;
                     _logger.Msg($"Applied saved camera zoom: PixelsPerUnit = {_lastUsedPixelsPerUnit}");
                 }
+                
+                _mainCamera = _worldCamera._camera;
+                if (_mainCamera != null)
+                {
+                    SetupCameraForInteriorVisibility();
+                }
             }
             return true;
+        }
+
+        private IEnumerator InitializeInteriorVisibility()
+        {
+            while (true)
+            {
+                var renderers = UnityEngine.Object.FindObjectsOfType<Renderer>();
+                foreach (var renderer in renderers)
+                {
+                    if (renderer != null)
+                    {
+                        renderer.allowOcclusionWhenDynamic = false;
+                        renderer.receiveShadows = false;
+                        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    }
+                }
+
+                var occlusionAreas = UnityEngine.Object.FindObjectsOfType<OcclusionArea>();
+                foreach (var area in occlusionAreas)
+                {
+                    if (area != null)
+                    {
+                        area.size = Vector3.zero;
+                        area.center = new Vector3(0, -999999, 0);
+                    }
+                }
+
+                yield return new WaitForSeconds(0.1f);
+            }
+        }
+
+        private void SetupCameraForInteriorVisibility()
+        {
+            if (_mainCamera != null)
+            {
+                _mainCamera.clearFlags = CameraClearFlags.SolidColor;
+                _mainCamera.cullingMask = 1;
+            }
+        }
+
+        private void UpdateInteriorVisibility()
+        {
+            var renderers = UnityEngine.Object.FindObjectsOfType<Renderer>();
+            foreach (var renderer in renderers)
+            {
+                if (renderer != null)
+                {
+                    renderer.forceRenderingOff = false;
+                    if (renderer.gameObject.name.ToLower().Contains("roof") || 
+                        renderer.gameObject.name.ToLower().Contains("ceiling"))
+                    {
+                        renderer.enabled = false;
+                    }
+                }
+            }
         }
 
         private void HandleZoomAdjustments()
