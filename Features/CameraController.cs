@@ -18,7 +18,6 @@ namespace AutoNexus.Features
         private float _lastUsedPixelsPerUnit;
         private bool _hasInitializedZoom;
         private bool _hasCameraSetup;
-        private bool _hasInitializedInteriorVisibility;
 
         public CameraController(ModConfig config, MelonLogger.Instance logger)
         {
@@ -26,23 +25,20 @@ namespace AutoNexus.Features
             _logger = logger;
             _lastUsedPixelsPerUnit = ModDefaults.Camera.DEFAULT_PIXELS_PER_UNIT;
             UpdateZoomKeys();
-            MelonCoroutines.Start(InitializeInteriorVisibility());
         }
 
         public void Reset()
         {
             _worldCamera = null;
             _mainCamera = null;
+            _hasInitializedZoom = false;
             _hasCameraSetup = false;
-            _hasInitializedInteriorVisibility = false;
-            MelonCoroutines.Start(InitializeInteriorVisibility());
         }
 
         public void Update()
         {
             TryInitializeCamera();
             HandleZoomAdjustments();
-            UpdateInteriorVisibility();
         }
 
         private void TryInitializeCamera()
@@ -87,78 +83,6 @@ namespace AutoNexus.Features
                 {
                     _logger.Error($"Error setting up camera: {ex.Message}");
                 }
-            }
-        }
-
-        private IEnumerator InitializeInteriorVisibility()
-        {
-            while (!_hasInitializedInteriorVisibility)
-            {
-                try 
-                {
-                    var renderers = UnityEngine.Object.FindObjectsOfType<Renderer>();
-                    if (renderers != null)
-                    {
-                        foreach (var renderer in renderers)
-                        {
-                            if (renderer != null)
-                            {
-                                renderer.allowOcclusionWhenDynamic = false;
-                                renderer.receiveShadows = false;
-                                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                            }
-                        }
-                    }
-
-                    var occlusionAreas = UnityEngine.Object.FindObjectsOfType<OcclusionArea>();
-                    if (occlusionAreas != null)
-                    {
-                        foreach (var area in occlusionAreas)
-                        {
-                            if (area != null)
-                            {
-                                area.size = Vector3.zero;
-                                area.center = new Vector3(0, -999999, 0);
-                            }
-                        }
-                    }
-
-                    _hasInitializedInteriorVisibility = true;
-                    _logger.Msg("Interior visibility initialization completed");
-                }
-                catch (System.Exception ex)
-                {
-                    _logger.Error($"Error in interior visibility initialization: {ex.Message}");
-                }
-
-                yield return new WaitForSeconds(0.1f);
-            }
-        }
-
-        private void UpdateInteriorVisibility()
-        {
-            try 
-            {
-                var renderers = UnityEngine.Object.FindObjectsOfType<Renderer>();
-                if (renderers != null)
-                {
-                    foreach (var renderer in renderers)
-                    {
-                        if (renderer != null)
-                        {
-                            renderer.forceRenderingOff = false;
-                            if (renderer.gameObject.name.ToLower().Contains("roof") || 
-                                renderer.gameObject.name.ToLower().Contains("ceiling"))
-                            {
-                                renderer.enabled = false;
-                            }
-                        }
-                    }
-                }
-            }
-            catch (System.Exception ex)
-            {
-                _logger.Error($"Error updating interior visibility: {ex.Message}");
             }
         }
 
