@@ -10,8 +10,10 @@ namespace AutoNexus.Features
         private readonly MelonLogger.Instance _logger;
         private bool _isActive = false;
         private static float DefaultGameSpeed;
-        private const float SpeedBoost = 0.070f;
-
+        private static float DefaultFixedDeltaTime;
+        private const float SpeedBoost = 0.045f;
+        private const float MaxAllowedSpeed = 1.045f;
+        
         private KeyCode _toggleKey;
         private readonly ModConfig _config;
 
@@ -20,10 +22,12 @@ namespace AutoNexus.Features
             _logger = logger;
             _config = config;
             DefaultGameSpeed = Time.timeScale;
-
+            DefaultFixedDeltaTime = Time.fixedDeltaTime;
+            
             _toggleKey = GetKeyCodeFromString(_config.SpeedHackKey.Value);
-
+            
             _logger.Msg($"[SpeedHack] Default game speed detected: {DefaultGameSpeed}");
+            _logger.Msg($"[SpeedHack] Default fixedDeltaTime detected: {DefaultFixedDeltaTime}");
             _logger.Msg($"[SpeedHack] SpeedHack keybind set to: {_toggleKey}");
         }
 
@@ -38,10 +42,18 @@ namespace AutoNexus.Features
         private void ToggleSpeed()
         {
             _isActive = !_isActive;
-            float newSpeed = _isActive ? DefaultGameSpeed + SpeedBoost : DefaultGameSpeed;
-            Time.timeScale = newSpeed;
-            Time.fixedDeltaTime = (0.02f / DefaultGameSpeed) * Time.timeScale;
-
+            
+            if (_isActive)
+            {
+                Time.timeScale = MaxAllowedSpeed;
+                Time.fixedDeltaTime = DefaultFixedDeltaTime / MaxAllowedSpeed;
+            }
+            else
+            {
+                Time.timeScale = DefaultGameSpeed;
+                Time.fixedDeltaTime = DefaultFixedDeltaTime;
+            }
+            
             _logger.Msg($"[SpeedHack] Toggled! New speed: {Time.timeScale}, FixedDeltaTime: {Time.fixedDeltaTime}");
         }
 
