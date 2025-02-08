@@ -3,7 +3,6 @@ using AutoNexus.Configuration;
 using MelonLoader;
 using AutoNexus.Constants;
 using Il2Cpp;
-using System.Collections;
 
 namespace AutoNexus.Features
 {
@@ -19,7 +18,9 @@ namespace AutoNexus.Features
         private float _lastUsedPixelsPerUnit;
         private bool _hasInitializedZoom;
         private float _lastRemovalCheckZoom;
-        private const float ZOOM_CHECK_THRESHOLD = 0.2f;
+        private float _zoomUpdateTimer;
+        private const float ZOOM_CHECK_THRESHOLD = 0.1f;
+        private const float CHECK_INTERVAL = 0.2f;
 
         public CameraController(ModConfig config, MelonLogger.Instance logger, RoofRemover roofRemover)
         {
@@ -37,13 +38,44 @@ namespace AutoNexus.Features
             _mainCamera = null;
             _hasInitializedZoom = false;
             _lastRemovalCheckZoom = ModDefaults.Camera.DEFAULT_PIXELS_PER_UNIT;
+            _zoomUpdateTimer = 0f;
         }
 
         public void Update()
         {
-            TryInitializeCamera();
+            if (_worldCamera == null)
+            {
+                TryInitializeCamera();
+                return;
+            }
+
+            if (!IsValidCamera())
+            {
+                Reset();
+                return;
+            }
+
             HandleZoomAdjustments();
-            CheckForZoomBasedRemoval();
+
+            _zoomUpdateTimer += Time.deltaTime;
+            if (_zoomUpdateTimer >= CHECK_INTERVAL)
+            {
+                CheckForZoomBasedRemoval();
+                _zoomUpdateTimer = 0f;
+            }
+        }
+
+        private bool IsValidCamera()
+        {
+            try
+            {
+                var test = _worldCamera.PixelsPerUnit;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void CheckForZoomBasedRemoval()
@@ -60,37 +92,26 @@ namespace AutoNexus.Features
 
         private void TryInitializeCamera()
         {
-            if (_worldCamera == null)
+            try 
             {
-                try 
-                {
-                    _worldCamera = UnityEngine.Object.FindObjectOfType<WorldCamera>();
-                }
-                catch (System.Exception ex)
-                {
-                    _logger.Error($"Error finding WorldCamera: {ex.Message}");
-                    return;
-                }
-
-                if (_worldCamera == null)
-                    return;
-
-                if (!_hasInitializedZoom)
+                _worldCamera = UnityEngine.Object.FindObjectOfType<WorldCamera>();
+                
+                if (_worldCamera != null && !_hasInitializedZoom)
                 {
                     _worldCamera.PixelsPerUnit = _lastUsedPixelsPerUnit;
                     _hasInitializedZoom = true;
-                    _logger.Msg($"Applied saved camera zoom: PixelsPerUnit = {_lastUsedPixelsPerUnit}");
-                    
-                    _roofRemover.RemoveRoofs();
+                    _logger.Msg($"Camera initialized - PixelsPerUnit = {_lastUsedPixelsPerUnit}");
+                    _roofRemover.OnNewInstance();
                 }
+            }
+            catch (System.Exception ex)
+            {
+                _logger.Error($"Error initializing camera: {ex.Message}");
             }
         }
 
         private void HandleZoomAdjustments()
         {
-            if (_worldCamera == null)
-                return;
-
             float newPixelsPerUnit = _worldCamera.PixelsPerUnit;
             bool adjustmentMade = false;
 
@@ -105,26 +126,30 @@ namespace AutoNexus.Features
                 }
             }
 
-            if (_currentZoomInKey != KeyCode.None && Input.GetKeyDown(_currentZoomInKey))
+            if (!adjustmentMade)
             {
-                newPixelsPerUnit += ModDefaults.Camera.PIXELS_PER_UNIT_STEP;
-                adjustmentMade = true;
-            }
-            else if (_currentZoomOutKey != KeyCode.None && Input.GetKeyDown(_currentZoomOutKey))
-            {
-                newPixelsPerUnit -= ModDefaults.Camera.PIXELS_PER_UNIT_STEP;
-                adjustmentMade = true;
+                if (_currentZoomInKey != KeyCode.None && Input.GetKeyDown(_currentZoomInKey))
+                {
+                    newPixelsPerUnit += ModDefaults.Camera.PIXELS_PER_UNIT_STEP;
+                    adjustmentMade = true;
+                }
+                else if (_currentZoomOutKey != KeyCode.None && Input.GetKeyDown(_currentZoomOutKey))
+                {
+                    newPixelsPerUnit -= ModDefaults.Camera.PIXELS_PER_UNIT_STEP;
+                    adjustmentMade = true;
+                }
             }
 
             if (adjustmentMade)
             {
-                newPixelsPerUnit = Mathf.Clamp(newPixelsPerUnit, ModDefaults.Camera.MIN_PIXELS_PER_UNIT, ModDefaults.Camera.MAX_PIXELS_PER_UNIT);
+                newPixelsPerUnit = Mathf.Clamp(newPixelsPerUnit, 
+                    ModDefaults.Camera.MIN_PIXELS_PER_UNIT, 
+                    ModDefaults.Camera.MAX_PIXELS_PER_UNIT);
+
                 if (System.Math.Abs(newPixelsPerUnit - _worldCamera.PixelsPerUnit) > 0.01f)
                 {
                     _worldCamera.PixelsPerUnit = newPixelsPerUnit;
                     _lastUsedPixelsPerUnit = newPixelsPerUnit;
-                    _logger.Msg($"Camera Zoom Updated: PixelsPerUnit = {newPixelsPerUnit}");
-                    
                     _roofRemover.ForceRoofRemoval();
                 }
             }
@@ -134,25 +159,13 @@ namespace AutoNexus.Features
         {
             try
             {
-                string zoomInString = _config.ZoomInKey.Value.ToUpper();
-                if (zoomInString == "MOUSESCROLLUP")
-                {
-                    _currentZoomInKey = KeyCode.None;
-                }
-                else
-                {
-                    _currentZoomInKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), zoomInString, ignoreCase: true);
-                }
+                _currentZoomInKey = _config.ZoomInKey.Value.ToUpper() == "MOUSESCROLLUP" 
+                    ? KeyCode.None 
+                    : (KeyCode)System.Enum.Parse(typeof(KeyCode), _config.ZoomInKey.Value, true);
 
-                string zoomOutString = _config.ZoomOutKey.Value.ToUpper();
-                if (zoomOutString == "MOUSESCROLLDOWN")
-                {
-                    _currentZoomOutKey = KeyCode.None;
-                }
-                else
-                {
-                    _currentZoomOutKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), zoomOutString, ignoreCase: true);
-                }
+                _currentZoomOutKey = _config.ZoomOutKey.Value.ToUpper() == "MOUSESCROLLDOWN"
+                    ? KeyCode.None
+                    : (KeyCode)System.Enum.Parse(typeof(KeyCode), _config.ZoomOutKey.Value, true);
             }
             catch (System.ArgumentException ex)
             {
