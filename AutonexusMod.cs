@@ -44,6 +44,8 @@ namespace AutoNexus
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
             roofRemover.RemoveRoofs();
+
+            speedHack?.Reset();
         }
 
         public override void OnUpdate()
@@ -57,9 +59,10 @@ namespace AutoNexus
             speedHack?.Update();
         }
 
-
         public override void OnApplicationQuit()
         {
+
+            speedHack?.Reset();
             cameraController?.Reset();
             roofRemover.Stop();
         }
