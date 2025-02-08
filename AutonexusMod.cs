@@ -2,6 +2,8 @@
 using AutoNexus.Configuration;
 using AutoNexus.Features;
 using AutoNexus.Utils;
+using HarmonyLib;
+using HarmonyInstance = HarmonyLib.Harmony;
 
 namespace AutoNexus
 {
@@ -16,6 +18,7 @@ namespace AutoNexus
         private NameChanger nameChanger;
         private AntiAFK antiAFK;
         private AutoPot autoPot;
+        private SpeedHack speedHack;
 
         public override void OnInitializeMelon()
         {
@@ -30,7 +33,12 @@ namespace AutoNexus
             nameChanger = new NameChanger(config, LoggerInstance, "Character(Clone)");
             antiAFK = new AntiAFK(LoggerInstance);
             autoPot = new AutoPot(LoggerInstance, config, soundManager);
+            speedHack = new SpeedHack(config, LoggerInstance);
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
+
+            var harmony = new HarmonyInstance("com.yourname.autonexusmod");
+            harmony.PatchAll();
+            LoggerInstance.Msg("Harmony patches applied.");
         }
         
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
@@ -46,7 +54,9 @@ namespace AutoNexus
             antiAFK?.Update();
             autoPot?.Update();
             autoNexus?.Update();
+            speedHack?.Update();
         }
+
 
         public override void OnApplicationQuit()
         {

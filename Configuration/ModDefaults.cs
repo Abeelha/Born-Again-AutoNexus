@@ -14,6 +14,9 @@
         public const float AUTO_POT_HEALTH_THRESHOLD = 0.45f;
         public const string AUTO_POT_KEY = "1";
         public const string AUTO_POT_TOGGLE_KEY = "H";
+        
+        public const string SPEED_HACK_KEY = "T";
+
 
         public static class Camera
         {
