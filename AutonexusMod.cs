@@ -23,14 +23,19 @@ namespace AutoNexus
             config.Initialize(LoggerInstance);
 
             soundManager = new SoundManager(LoggerInstance);
-            autoNexus = new Features.AutoNexus(config, LoggerInstance);
-            cameraController = new CameraController(config, LoggerInstance);
             roofRemover = new RoofRemover(LoggerInstance);
+            autoNexus = new Features.AutoNexus(config, LoggerInstance);
+            cameraController = new CameraController(config, LoggerInstance, roofRemover);
             keyboardController = new KeyboardController(config, LoggerInstance, soundManager);
             nameChanger = new NameChanger(config, LoggerInstance, "Character(Clone)");
             antiAFK = new AntiAFK(LoggerInstance);
             autoPot = new AutoPot(LoggerInstance, config, soundManager);
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
+        }
+        
+        public override void OnSceneWasLoaded(int buildIndex, string sceneName)
+        {
+            roofRemover.RemoveRoofs();
         }
 
         public override void OnUpdate()
@@ -46,7 +51,7 @@ namespace AutoNexus
         public override void OnApplicationQuit()
         {
             cameraController?.Reset();
-            roofRemover?.Reset();
+            roofRemover.Stop();
         }
     }
 }

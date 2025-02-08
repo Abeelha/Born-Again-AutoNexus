@@ -18,7 +18,8 @@ namespace AutoNexus.Features
         private KeyCode _currentZoomOutKey;
         private float _lastUsedPixelsPerUnit;
         private bool _hasInitializedZoom;
-        private bool _hasCameraSetup;
+        private float _lastRemovalCheckZoom;
+        private const float ZOOM_CHECK_THRESHOLD = 0.2f;
 
         public CameraController(ModConfig config, MelonLogger.Instance logger, RoofRemover roofRemover)
         {
@@ -26,6 +27,7 @@ namespace AutoNexus.Features
             _logger = logger;
             _roofRemover = roofRemover;
             _lastUsedPixelsPerUnit = ModDefaults.Camera.DEFAULT_PIXELS_PER_UNIT;
+            _lastRemovalCheckZoom = _lastUsedPixelsPerUnit;
             UpdateZoomKeys();
         }
 
@@ -34,13 +36,26 @@ namespace AutoNexus.Features
             _worldCamera = null;
             _mainCamera = null;
             _hasInitializedZoom = false;
-            _hasCameraSetup = false;
+            _lastRemovalCheckZoom = ModDefaults.Camera.DEFAULT_PIXELS_PER_UNIT;
         }
 
         public void Update()
         {
             TryInitializeCamera();
             HandleZoomAdjustments();
+            CheckForZoomBasedRemoval();
+        }
+
+        private void CheckForZoomBasedRemoval()
+        {
+            if (_worldCamera == null) return;
+
+            float currentZoom = _worldCamera.PixelsPerUnit;
+            if (Mathf.Abs(currentZoom - _lastRemovalCheckZoom) >= ZOOM_CHECK_THRESHOLD)
+            {
+                _roofRemover.ForceRoofRemoval();
+                _lastRemovalCheckZoom = currentZoom;
+            }
         }
 
         private void TryInitializeCamera()
@@ -59,31 +74,14 @@ namespace AutoNexus.Features
 
                 if (_worldCamera == null)
                     return;
-            }
 
-            if (!_hasInitializedZoom)
-            {
-                _worldCamera.PixelsPerUnit = _lastUsedPixelsPerUnit;
-                _hasInitializedZoom = true;
-                _logger.Msg($"Applied saved camera zoom: PixelsPerUnit = {_lastUsedPixelsPerUnit}");
-            }
-
-            if (!_hasCameraSetup)
-            {
-                try 
+                if (!_hasInitializedZoom)
                 {
-                    _mainCamera = _worldCamera._camera;
-                    if (_mainCamera != null)
-                    {
-                        _mainCamera.clearFlags = CameraClearFlags.SolidColor;
-                        _mainCamera.cullingMask = 1;
-                        _hasCameraSetup = true;
-                        _logger.Msg("Camera setup completed successfully");
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    _logger.Error($"Error setting up camera: {ex.Message}");
+                    _worldCamera.PixelsPerUnit = _lastUsedPixelsPerUnit;
+                    _hasInitializedZoom = true;
+                    _logger.Msg($"Applied saved camera zoom: PixelsPerUnit = {_lastUsedPixelsPerUnit}");
+                    
+                    _roofRemover.RemoveRoofs();
                 }
             }
         }
@@ -127,7 +125,6 @@ namespace AutoNexus.Features
                     _lastUsedPixelsPerUnit = newPixelsPerUnit;
                     _logger.Msg($"Camera Zoom Updated: PixelsPerUnit = {newPixelsPerUnit}");
                     
-                    // Force roof removal after zoom change
                     _roofRemover.ForceRoofRemoval();
                 }
             }

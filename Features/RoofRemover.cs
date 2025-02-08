@@ -3,93 +3,101 @@ using MelonLoader;
 using Il2Cpp;
 using System.Collections;
 using System.Linq;
+using Il2CppInterop.Runtime;
 
 namespace AutoNexus.Features
 {
     public class RoofRemover
     {
         private readonly MelonLogger.Instance _logger;
-        private bool _hasInitializedInteriorVisibility;
-        private int _initializationAttempts;
+        private bool _isActive = false;
+        private float _checkInterval = 0.1f;
+        private Coroutine _monitorCoroutine;
 
         public RoofRemover(MelonLogger.Instance logger)
         {
             _logger = logger;
-            _initializationAttempts = 0;
-            MelonCoroutines.Start(InitializeInteriorVisibility());
+        }
+
+        public void RemoveRoofs()
+        {
+            if (!_isActive)
+            {
+                _isActive = true;
+                MelonCoroutines.Start(MonitorForNewChunks());
+                _logger.Msg("Started continuous ceiling removal monitoring");
+            }
+
+            DisableAllCeilingChunks();
+        }
+
+        private IEnumerator MonitorForNewChunks()
+        {
+            while (_isActive)
+            {
+                DisableAllCeilingChunks();
+                yield return new WaitForSeconds(_checkInterval);
+            }
+        }
+
+        private void DisableAllCeilingChunks()
+        {
+            try 
+            {
+                var objects = UnityEngine.Object.FindObjectsOfType(Il2CppType.Of<TileChunk>());
+                var ceilingChunks = objects?.Select(obj => obj.TryCast<TileChunk>())
+                                         .Where(chunk => chunk != null && 
+                                                       chunk.name.Contains("CeilingChunk"))
+                                         .ToArray();
+
+                if (ceilingChunks != null && ceilingChunks.Length > 0)
+                {
+                    foreach (var chunk in ceilingChunks)
+                    {
+                        if (chunk == null) 
+                            continue;
+
+                        // Disable the chunk itself
+                        chunk.SetActive(false);
+
+                        // Disable rendering
+                        if (chunk.MeshRenderer != null)
+                        {
+                            chunk.MeshRenderer.enabled = false;
+                        }
+
+                        // Set alpha to 0 for all tiles
+                        if (chunk.Size != null)
+                        {
+                            int totalTiles = chunk.Size.x * chunk.Size.y;
+                            for (int i = 0; i < totalTiles; i++)
+                            {
+                                chunk.SetAlpha(0f, i);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                _logger.Error($"Error in ceiling removal: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        public void Stop()
+        {
+            _isActive = false;
         }
 
         public void Reset()
         {
-            _hasInitializedInteriorVisibility = false;
-            _initializationAttempts = 0;
-            MelonCoroutines.Start(InitializeInteriorVisibility());
+            Stop();
+            RemoveRoofs();
         }
 
         public void ForceRoofRemoval()
         {
-            _hasInitializedInteriorVisibility = false;
-            _initializationAttempts = 0;
-            MelonCoroutines.Start(InitializeInteriorVisibility());
-        }
-
-        private IEnumerator InitializeInteriorVisibility()
-        {
-            while (!_hasInitializedInteriorVisibility)
-            {
-                _initializationAttempts++;
-
-                // Limit logging and attempts
-                if (_initializationAttempts > 10)
-                {
-                    _logger.Msg("Max initialization attempts reached. Stopping roof removal attempts.");
-                    yield break;
-                }
-
-                try 
-                {
-                    var allGameObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
-
-                    if (allGameObjects != null && allGameObjects.Length > 0)
-                    {
-                        bool roofRemoved = false;
-                        foreach (var go in allGameObjects)
-                        {
-                            if (go == null) continue;
-
-                            var renderers = go.GetComponents<Renderer>();
-                            foreach (var renderer in renderers)
-                            {
-                                if (renderer == null) continue;
-
-                                renderer.allowOcclusionWhenDynamic = false;
-                                renderer.receiveShadows = false;
-                                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-                                string rendererName = renderer.gameObject.name.ToLower();
-                                if (rendererName.Contains("roof") || rendererName.Contains("ceiling"))
-                                {
-                                    renderer.enabled = false;
-                                    roofRemoved = true;
-                                }
-                            }
-                        }
-
-                        if (roofRemoved)
-                        {
-                            _logger.Msg("Roof removal applied successfully!");
-                            _hasInitializedInteriorVisibility = true;
-                            yield break;
-                        }
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    _logger.Error($"Error in roof removal: {ex.Message}");
-                }
-
-                yield return new WaitForSeconds(7f);
-            }
+            DisableAllCeilingChunks();
         }
     }
 }
