@@ -18,7 +18,7 @@ namespace AutoNexus.Features
         private readonly SoundManager _soundManager;
         private GameObject _playerCharacter;
         private Character _characterComponent;
-        private readonly HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
+        private HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
         private bool _isSimulatingKeyPress;
         private byte _autoPotKey;
         private bool _gracePeriodActive;
@@ -27,15 +27,14 @@ namespace AutoNexus.Features
 
         private const float MIN_UPDATE_INTERVAL = 1f / 165f;
         private const float AUTO_POT_DELAY = 0.5f;
-        private const float HEALTH_CHECK_INTERVAL = 0.1f;
-        private float _lastHealthCheckTime;
+        private const float RAPID_HEALTH_DROP_THRESHOLD = -50f;
+        private const float EMERGENCY_HEALTH_RATIO = 0.3f;
 
         public AutoPot(MelonLogger.Instance logger, ModConfig config, SoundManager soundManager)
         {
             _logger = logger;
             _config = config;
             _soundManager = soundManager;
-            _lastHealthCheckTime = Time.realtimeSinceStartup;
             ParseAutoPotKey();
             UpdateAutoPotToggleKey();
             StartInitialization();
@@ -84,7 +83,6 @@ namespace AutoNexus.Features
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void StartInitialization()
         {
             MelonCoroutines.Start(InitializePlayer());
@@ -119,41 +117,17 @@ namespace AutoNexus.Features
                 return false;
             }
 
-            InitializeHealthState();
-            return true;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void InitializeHealthState()
-        {
             int currentHealth = _characterComponent.Health;
             _monitorState.LastHealthValue = currentHealth;
             _monitorState.PreviousStableHealth = currentHealth;
             _monitorState.MaxHealth = currentHealth;
+
             _logger.Msg($"AutoPot: Initial max health set to {_monitorState.MaxHealth}");
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update()
-        {
-            HandleToggleInput();
-
-            if (!_autoPotEnabled)
-                return;
-
-            if (!ValidatePlayerState())
-                return;
-
-            float currentTime = Time.realtimeSinceStartup;
-            if (currentTime - _lastHealthCheckTime >= HEALTH_CHECK_INTERVAL)
-            {
-                ProcessHealthCheck();
-                _lastHealthCheckTime = currentTime;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void HandleToggleInput()
         {
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
                 Input.GetKeyDown(_currentAutoPotToggleKey))
@@ -162,6 +136,15 @@ namespace AutoNexus.Features
                 _logger.Msg($"AutoPot toggled {(_autoPotEnabled ? "ON" : "OFF")}.");
                 _soundManager.PlayAutoPotToggleSound(_autoPotEnabled);
             }
+
+            if (!_autoPotEnabled)
+                return;
+
+            if (!ValidatePlayerState())
+                return;
+
+            HealthMonitoringHelper.UpdateStability(_monitorState, _characterComponent.Health, MIN_UPDATE_INTERVAL, ModDefaults.HEALTH_STABILITY_TIME, _logger);
+            ProcessHealthCheck();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -187,28 +170,35 @@ namespace AutoNexus.Features
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ProcessHealthCheck()
         {
-            if (_isSimulatingKeyPress)
-                return;
-
             int currentHealth = _characterComponent.Health;
-            
-
-            HealthMonitoringHelper.UpdateStability(_monitorState, currentHealth, HEALTH_CHECK_INTERVAL, ModDefaults.HEALTH_STABILITY_TIME, _logger);
-            
             float healthRatio = _monitorState.MaxHealth > 0 ? (float)currentHealth / _monitorState.MaxHealth : 1f;
+
+            bool shouldPot = false;
+            string reason = "";
+
+
+            if (_monitorState.HealthDropRate < RAPID_HEALTH_DROP_THRESHOLD && healthRatio < EMERGENCY_HEALTH_RATIO)
+            {
+                shouldPot = true;
+                reason = $"rapid health drop ({_monitorState.HealthDropRate:F2}/s)";
+            }
+
+            else if (healthRatio <= _config.AutoPotHealthThreshold.Value)
+            {
+                shouldPot = true;
+                reason = "below threshold";
+            }
+
+            if (!_gracePeriodActive && shouldPot && !_isSimulatingKeyPress)
+            {
+                _logger.Msg($"AutoPot: Health is low ({currentHealth}/{_monitorState.MaxHealth} = {healthRatio:P}) - {reason}. Using health potion.");
+                MelonCoroutines.Start(SimulateKeyPress());
+            }
+
             if (currentHealth > _monitorState.MaxHealth)
             {
                 _monitorState.MaxHealth = currentHealth;
                 _logger.Msg($"AutoPot: Max health updated to {_monitorState.MaxHealth}");
-            }
-
-
-            if (!_gracePeriodActive && 
-                healthRatio <= _config.AutoPotHealthThreshold.Value && 
-                _monitorState.HealthDropRate < -0.1f)
-            {
-                _logger.Msg($"AutoPot: Health is low ({currentHealth}/{_monitorState.MaxHealth} = {healthRatio:P}) and dropping at {_monitorState.HealthDropRate:F2}/s. Using health potion.");
-                MelonCoroutines.Start(SimulateKeyPress());
             }
         }
 
