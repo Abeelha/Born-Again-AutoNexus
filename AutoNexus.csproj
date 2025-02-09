@@ -11,5 +11,9 @@
 	<ItemGroup>
 		<Reference Include="Libs\*.dll" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Constants\" />
+	</ItemGroup>
 	
 </Project>
