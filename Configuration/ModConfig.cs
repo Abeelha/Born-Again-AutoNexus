@@ -15,8 +15,6 @@ namespace AutoNexus.Configuration
         public MelonPreferences_Entry<float> AutoPotHealthThreshold { get; private set; }
         public MelonPreferences_Entry<string> AutoPotKey { get; private set; }
         public MelonPreferences_Entry<string> AutoPotToggleKey { get; private set; }
-        
-        public MelonPreferences_Entry<string> SpeedHackKey { get; private set; }
 
         public void Initialize(MelonLogger.Instance logger)
         {
@@ -41,8 +39,6 @@ namespace AutoNexus.Configuration
         {
             DisconnectKey = _config.CreateEntry("DisconnectKey", ModDefaults.DISCONNECT_KEY,
                 description: "Key to press for manual disconnect");
-            SpeedHackKey = _config.CreateEntry("SpeedHackKey", ModDefaults.SPEED_HACK_KEY,
-                description: "Key to toggle SpeedHack. Enter a single letter or digit (e.g., T, G, 5).");
         }
 
         private void InitializePlayerSettings()
@@ -73,8 +69,6 @@ namespace AutoNexus.Configuration
         {
             logger.Msg("=== Customization Settings ===");
             logger.Msg($"Player Name: {PlayerName.Value}");
-            logger.Msg("=== SpeedHack Settings ===");
-            logger.Msg($"Player Name: {SpeedHackKey.Value}");
             logger.Msg("=== AutoNexus Settings ===");
             logger.Msg($"Health Threshold: {HealthThreshold.Value * 100:F2}%");
             logger.Msg($"Init Check Interval (fixed): {ModDefaults.INIT_CHECK_INTERVAL}s");
