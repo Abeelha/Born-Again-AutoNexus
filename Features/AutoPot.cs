@@ -7,6 +7,7 @@ using AutoNexus.Configuration;
 using AutoNexus.Constants;
 using AutoNexus.Helpers;
 using AutoNexus.Utils;
+using System.Runtime.CompilerServices;
 
 namespace AutoNexus.Features
 {
@@ -17,7 +18,7 @@ namespace AutoNexus.Features
         private readonly SoundManager _soundManager;
         private GameObject _playerCharacter;
         private Character _characterComponent;
-        private HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
+        private readonly HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
         private bool _isSimulatingKeyPress;
         private byte _autoPotKey;
         private bool _gracePeriodActive;
@@ -26,17 +27,21 @@ namespace AutoNexus.Features
 
         private const float MIN_UPDATE_INTERVAL = 1f / 165f;
         private const float AUTO_POT_DELAY = 0.5f;
+        private const float HEALTH_CHECK_INTERVAL = 0.1f;
+        private float _lastHealthCheckTime;
 
         public AutoPot(MelonLogger.Instance logger, ModConfig config, SoundManager soundManager)
         {
             _logger = logger;
             _config = config;
             _soundManager = soundManager;
+            _lastHealthCheckTime = Time.realtimeSinceStartup;
             ParseAutoPotKey();
             UpdateAutoPotToggleKey();
             StartInitialization();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ParseAutoPotKey()
         {
             string keyString = _config.AutoPotKey.Value.Trim();
@@ -61,6 +66,7 @@ namespace AutoNexus.Features
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateAutoPotToggleKey()
         {
             string keyString = _config.AutoPotToggleKey.Value.ToUpper();
@@ -78,6 +84,7 @@ namespace AutoNexus.Features
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void StartInitialization()
         {
             MelonCoroutines.Start(InitializePlayer());
@@ -98,6 +105,7 @@ namespace AutoNexus.Features
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryInitializePlayer()
         {
             _playerCharacter = GameObject.Find(ModDefaults.PLAYER_OBJECT_NAME);
@@ -111,16 +119,41 @@ namespace AutoNexus.Features
                 return false;
             }
 
+            InitializeHealthState();
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void InitializeHealthState()
+        {
             int currentHealth = _characterComponent.Health;
             _monitorState.LastHealthValue = currentHealth;
             _monitorState.PreviousStableHealth = currentHealth;
             _monitorState.MaxHealth = currentHealth;
-
             _logger.Msg($"AutoPot: Initial max health set to {_monitorState.MaxHealth}");
-            return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update()
+        {
+            HandleToggleInput();
+
+            if (!_autoPotEnabled)
+                return;
+
+            if (!ValidatePlayerState())
+                return;
+
+            float currentTime = Time.realtimeSinceStartup;
+            if (currentTime - _lastHealthCheckTime >= HEALTH_CHECK_INTERVAL)
+            {
+                ProcessHealthCheck();
+                _lastHealthCheckTime = currentTime;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void HandleToggleInput()
         {
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
                 Input.GetKeyDown(_currentAutoPotToggleKey))
@@ -129,17 +162,9 @@ namespace AutoNexus.Features
                 _logger.Msg($"AutoPot toggled {(_autoPotEnabled ? "ON" : "OFF")}.");
                 _soundManager.PlayAutoPotToggleSound(_autoPotEnabled);
             }
-
-            if (!_autoPotEnabled)
-                return;
-
-            if (!ValidatePlayerState())
-                return;
-
-            HealthMonitoringHelper.UpdateStability(_monitorState, _characterComponent.Health, MIN_UPDATE_INTERVAL, ModDefaults.HEALTH_STABILITY_TIME, _logger);
-            ProcessHealthCheck();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool ValidatePlayerState()
         {
             if (_playerCharacter != null && _playerCharacter.activeSelf)
@@ -159,21 +184,31 @@ namespace AutoNexus.Features
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ProcessHealthCheck()
         {
+            if (_isSimulatingKeyPress)
+                return;
+
             int currentHealth = _characterComponent.Health;
+            
+
+            HealthMonitoringHelper.UpdateStability(_monitorState, currentHealth, HEALTH_CHECK_INTERVAL, ModDefaults.HEALTH_STABILITY_TIME, _logger);
+            
             float healthRatio = _monitorState.MaxHealth > 0 ? (float)currentHealth / _monitorState.MaxHealth : 1f;
-
-            if (!_gracePeriodActive && healthRatio <= _config.AutoPotHealthThreshold.Value && !_isSimulatingKeyPress)
-            {
-                _logger.Msg($"AutoPot: Health is low ({currentHealth}/{_monitorState.MaxHealth} = {healthRatio:P}). Using health potion.");
-                MelonCoroutines.Start(SimulateKeyPress());
-            }
-
             if (currentHealth > _monitorState.MaxHealth)
             {
                 _monitorState.MaxHealth = currentHealth;
                 _logger.Msg($"AutoPot: Max health updated to {_monitorState.MaxHealth}");
+            }
+
+
+            if (!_gracePeriodActive && 
+                healthRatio <= _config.AutoPotHealthThreshold.Value && 
+                _monitorState.HealthDropRate < -0.1f)
+            {
+                _logger.Msg($"AutoPot: Health is low ({currentHealth}/{_monitorState.MaxHealth} = {healthRatio:P}) and dropping at {_monitorState.HealthDropRate:F2}/s. Using health potion.");
+                MelonCoroutines.Start(SimulateKeyPress());
             }
         }
 
@@ -211,11 +246,13 @@ namespace AutoNexus.Features
         private const uint KEYEVENTF_KEYDOWN = 0x0;
         private const uint KEYEVENTF_KEYUP = 0x2;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void KeyDown(byte vk)
         {
             keybd_event(vk, 0, KEYEVENTF_KEYDOWN, System.UIntPtr.Zero);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void KeyUp(byte vk)
         {
             keybd_event(vk, 0, KEYEVENTF_KEYUP, System.UIntPtr.Zero);

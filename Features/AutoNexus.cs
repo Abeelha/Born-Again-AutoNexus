@@ -5,6 +5,7 @@ using System.Collections;
 using AutoNexus.Constants;
 using AutoNexus.Helpers;
 using Il2Cpp;
+using System.Runtime.CompilerServices;
 
 namespace AutoNexus.Features
 {
@@ -14,7 +15,7 @@ namespace AutoNexus.Features
         private readonly MelonLogger.Instance _logger;
         private GameObject _playerCharacter;
         private Character _characterComponent;
-        private HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
+        private readonly HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
 
         private bool _gracePeriodActive;
         private bool _isMonitoringActive;
@@ -34,6 +35,7 @@ namespace AutoNexus.Features
             StartInitialization();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void StartInitialization()
         {
             MelonCoroutines.Start(InitializePlayer());
@@ -60,6 +62,7 @@ namespace AutoNexus.Features
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryInitializePlayer()
         {
             _playerCharacter = GameObject.Find(ModDefaults.PLAYER_OBJECT_NAME);
@@ -73,11 +76,22 @@ namespace AutoNexus.Features
                 return false;
             }
 
+            InitializeHealthState();
+            InitializeEntityName();
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void InitializeHealthState()
+        {
             int currentHealth = _characterComponent.Health;
             _monitorState.LastHealthValue = currentHealth;
             _monitorState.PreviousStableHealth = currentHealth;
             _monitorState.MaxHealth = currentHealth;
+        }
 
+        private void InitializeEntityName()
+        {
             var entity = _playerCharacter.GetComponent<Il2Cpp.Entity>();
             if (entity != null)
             {
@@ -89,11 +103,9 @@ namespace AutoNexus.Features
             {
                 _logger.Warning("Entity component not found on player character during initialization.");
             }
-
-            _logger.Msg($"Player character initialized with custom name: {_config.PlayerName.Value}");
-            return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update()
         {
             if (!_isMonitoringActive || _characterComponent == null)
@@ -125,6 +137,7 @@ namespace AutoNexus.Features
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void StartHealthMonitoring()
         {
             if (_isMonitoringActive)
@@ -135,6 +148,7 @@ namespace AutoNexus.Features
             _monitoringCoroutine = MelonCoroutines.Start(MonitorPlayerHealth());
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void StopHealthMonitoring()
         {
             if (!_isMonitoringActive)
@@ -175,6 +189,7 @@ namespace AutoNexus.Features
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool ValidatePlayerState()
         {
             if (_playerCharacter != null && _playerCharacter.activeSelf)
@@ -194,18 +209,19 @@ namespace AutoNexus.Features
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ProcessHealthCheck()
         {
             int currentHealth = _characterComponent.Health;
-
             HealthMonitoringHelper.CheckCriticalHealth(currentHealth, _monitorState.MaxHealth, _config.HealthThreshold.Value, _logger);
 
-            if (ShouldTriggerNexus(currentHealth))
+            if (HealthMonitoringHelper.ShouldTriggerNexus(_config.HealthThreshold.Value, _gracePeriodActive))
             {
                 DisconnectFromWorld();
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ProcessHealthCheck(ref int lastLoggedHealth)
         {
             int currentHealth = _characterComponent.Health;
@@ -216,19 +232,13 @@ namespace AutoNexus.Features
                 HealthMonitoringHelper.CheckCriticalHealth(currentHealth, _monitorState.MaxHealth, _config.HealthThreshold.Value, _logger);
             }
 
-            if (ShouldTriggerNexus(currentHealth))
+            if (HealthMonitoringHelper.ShouldTriggerNexus(_config.HealthThreshold.Value, _gracePeriodActive))
             {
                 DisconnectFromWorld();
             }
         }
 
-        private bool ShouldTriggerNexus(int currentHealth)
-        {
-            return !_gracePeriodActive
-                && _monitorState.MaxHealth > 0
-                && currentHealth <= _monitorState.MaxHealth * _config.HealthThreshold.Value;
-        }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void DisconnectFromWorld()
         {
             try
