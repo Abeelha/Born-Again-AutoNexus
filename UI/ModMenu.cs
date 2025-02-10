@@ -16,6 +16,8 @@ namespace AutoNexus.UI
         private readonly MelonLogger.Instance _logger;
         private GameObject _configPanel;
         private bool _isVisible = true;
+        private bool _isInitialized = false;
+        private Canvas _mainCanvas;
 
         private TMP_InputField _healthThresholdInput;
         private TMP_InputField _autoPotThresholdInput;
@@ -45,12 +47,17 @@ namespace AutoNexus.UI
 
         private const float PANEL_WIDTH = 200f;
         private const float PANEL_HEIGHT = 220f;
+        private const float DESIRED_SCALE = 0.5f;
+        
         private const float ROW_HEIGHT = 25f;
-        private const float ROW_PADDING = 5f;
-        private const float HEADER_HEIGHT = 25f;
-        private const float SAVE_BUTTON_HEIGHT = 24f;
-        private const float SAVE_BUTTON_WIDTH = 80f;
-        private const float DIVIDER_MARGIN = 2f;
+        private const float ROW_PADDING = 4f;
+        private const float HEADER_HEIGHT = 20f;
+        private const float SAVE_BUTTON_HEIGHT = 20f;
+        private const float SAVE_BUTTON_WIDTH = 60f;
+        private const float DIVIDER_MARGIN = 1.5f;
+
+        private Vector3 _originalScale;
+        private Vector2 _originalSize;
 
         public ConfigDisplay(ModConfig config, MelonLogger.Instance logger)
         {
@@ -66,11 +73,80 @@ namespace AutoNexus.UI
                 return;
             }
 
-            CreatePanel(canvas);
+            _mainCanvas = canvas;
+        }
+
+        public void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Insert))
+            {
+                if (!_isInitialized)
+                {
+                    CreateUI();
+                    _isInitialized = true;
+                    _isVisible = true;
+                }
+                else
+                {
+                    if (_configPanel != null)
+                    {
+                        _isVisible = !_isVisible;
+                        _configPanel.SetActive(_isVisible);
+                    }
+                    else
+                    {
+                        CreateUI();
+                        _isVisible = true;
+                    }
+                }
+            }
+
+            if (_configPanel != null && _isVisible)
+            {
+                RectTransform rect = _configPanel.GetComponent<RectTransform>();
+                if (rect != null)
+                {
+                    if (rect.localScale != Vector3.one * DESIRED_SCALE)
+                    {
+                        rect.localScale = Vector3.one * DESIRED_SCALE;
+                    }
+
+                    if (rect.sizeDelta != new Vector2(PANEL_WIDTH, PANEL_HEIGHT))
+                    {
+                        rect.sizeDelta = new Vector2(PANEL_WIDTH, PANEL_HEIGHT);
+                    }
+                }
+
+                var scaler = _configPanel.GetComponent<CanvasScaler>();
+                if (scaler != null && scaler.scaleFactor != DESIRED_SCALE)
+                {
+                    scaler.scaleFactor = DESIRED_SCALE;
+                }
+            }
+        }
+
+        private void CreateUI()
+        {
+            if (_configPanel != null)
+            {
+                GameObject.Destroy(_configPanel);
+            }
+
+            CreatePanel(_mainCanvas);
             CreateHeader();
             CreateConfigDisplay();
             CreateSaveButton();
             UpdateCurrentValues();
+            _configPanel.SetActive(true);
+        }
+
+        public void ToggleVisibility()
+        {
+            if (_configPanel != null)
+            {
+                _isVisible = !_isVisible;
+                _configPanel.SetActive(_isVisible);
+            }
         }
 
         private void CreatePanel(Canvas canvas)
@@ -78,32 +154,32 @@ namespace AutoNexus.UI
             _configPanel = new GameObject("ConfigPanel");
             _configPanel.transform.SetParent(canvas.transform, false);
 
-
             Canvas panelCanvas = _configPanel.AddComponent<Canvas>();
             panelCanvas.overrideSorting = true;
             panelCanvas.sortingOrder = 100;
 
-
             CanvasScaler scaler = _configPanel.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 1;
-
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            scaler.scaleFactor = DESIRED_SCALE;
 
             _configPanel.AddComponent<GraphicRaycaster>();
 
             RectTransform panelRect = _configPanel.GetComponent<RectTransform>();
-            panelRect.anchorMin = new Vector2(1, 1);
-            panelRect.anchorMax = new Vector2(1, 1);
-            panelRect.pivot = new Vector2(1, 1);
-            panelRect.anchoredPosition = new Vector2(-10, -10);
+            panelRect.anchorMin = new Vector2(0, 0.5f);
+            panelRect.anchorMax = new Vector2(0, 0.5f);
+            panelRect.pivot = new Vector2(0, 0.5f);
+            panelRect.anchoredPosition = new Vector2(10, 0);
             panelRect.sizeDelta = new Vector2(PANEL_WIDTH, PANEL_HEIGHT);
-            panelRect.localScale = Vector3.one;
+            panelRect.localScale = Vector3.one * DESIRED_SCALE;
+
+            _originalScale = panelRect.localScale;
+            _originalSize = panelRect.sizeDelta;
 
             var background = _configPanel.AddComponent<Image>();
             background.color = PANEL_COLOR;
         }
+    
+
 
         private void CreateHeader()
         {
@@ -420,19 +496,6 @@ namespace AutoNexus.UI
                 _autoPotToggleInput.text = "";
             if (_disconnectKeyInput != null)
                 _disconnectKeyInput.text = "";
-        }
-
-        public void ToggleVisibility()
-        {
-            if (_configPanel != null)
-            {
-                _isVisible = !_isVisible;
-                _configPanel.SetActive(_isVisible);
-            }
-        }
-
-        public void Update()
-        {
         }
     }
 }
