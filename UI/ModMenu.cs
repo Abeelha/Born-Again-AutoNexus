@@ -12,40 +12,8 @@ namespace AutoNexus.UI
 {
     public class ConfigDisplay
     {
-        private readonly ModConfig _config;
-        private readonly MelonLogger.Instance _logger;
-        private GameObject _configPanel;
-        private bool _isVisible = true;
-        private bool _isInitialized = false;
-        private Canvas _mainCanvas;
-
-        private TMP_InputField _healthThresholdInput;
-        private TMP_InputField _autoPotThresholdInput;
-        private TMP_InputField _autoPotKeyInput;
-        private TMP_InputField _autoPotToggleInput;
-        private TMP_InputField _disconnectKeyInput;
-
-
-        private TextMeshProUGUI _healthValueText;
-        private TextMeshProUGUI _autoPotValueText;
-        private TextMeshProUGUI _potKeyValueText;
-        private TextMeshProUGUI _toggleValueText;
-        private TextMeshProUGUI _nexusValueText;
-        private Image _saveButtonImage;
-        private TextMeshProUGUI _saveButtonText;
-
-
-        private readonly Color PANEL_COLOR = new Color(0.08f, 0.04f, 0.16f, 0.95f);
-        private readonly Color LABEL_COLOR = new Color(0.95f, 0.4f, 0.95f, 1f);
-        private readonly Color VALUE_COLOR = new Color(0.4f, 0.95f, 0.95f, 1f);
-        private readonly Color INPUT_BG_COLOR = new Color(0.12f, 0.08f, 0.2f, 1f);
-        private readonly Color BUTTON_COLOR = new Color(0.95f, 0.2f, 0.6f, 1f);
-        private readonly Color DIVIDER_COLOR = new Color(0.95f, 0.4f, 0.95f, 0.2f);
-        private readonly Color SUCCESS_COLOR = new Color(0.2f, 0.95f, 0.4f, 1f);
-        private readonly Color ERROR_COLOR = new Color(0.95f, 0.2f, 0.2f, 1f);
-
-
-        private const float PANEL_WIDTH = 200f;
+        // UI Layout Constants
+        private const float PANEL_WIDTH = 150f;
         private const float PANEL_HEIGHT = 220f;
         private const float DESIRED_SCALE = 0.5f;
         
@@ -55,10 +23,51 @@ namespace AutoNexus.UI
         private const float SAVE_BUTTON_HEIGHT = 20f;
         private const float SAVE_BUTTON_WIDTH = 60f;
         private const float DIVIDER_MARGIN = 1.5f;
+        
+        private const float INPUT_FIELD_WIDTH = 20f;
+        private const float SLIDER_WIDTH = 120f;
+
+        // Colors
+        private readonly Color PANEL_COLOR = new Color(0.08f, 0.04f, 0.16f, 0.95f);
+        private readonly Color LABEL_COLOR = new Color(0.95f, 0.4f, 0.95f, 1f);
+        private readonly Color VALUE_COLOR = new Color(0.4f, 0.95f, 0.95f, 1f);
+        private readonly Color INPUT_BG_COLOR = new Color(0.12f, 0.08f, 0.2f, 1f);
+        private readonly Color BUTTON_COLOR = new Color(0.95f, 0.2f, 0.6f, 1f);
+        private readonly Color DIVIDER_COLOR = new Color(0.95f, 0.4f, 0.95f, 0.2f);
+        private readonly Color SUCCESS_COLOR = new Color(0.2f, 0.95f, 0.4f, 1f);
+        private readonly Color ERROR_COLOR = new Color(0.95f, 0.2f, 0.2f, 1f);
+
+        // Configuration and Logging
+        private readonly ModConfig _config;
+        private readonly MelonLogger.Instance _logger;
+
+        // UI Components
+        private GameObject _configPanel;
+        private bool _isVisible = true;
+        private bool _isInitialized = false;
+        private Canvas _mainCanvas;
+
+        // Input Fields
+        private TMP_InputField _healthThresholdInput;
+        private TMP_InputField _autoPotThresholdInput;
+        private TMP_InputField _autoPotKeyInput;
+        private TMP_InputField _autoPotToggleInput;
+        private TMP_InputField _disconnectKeyInput;
+
+        // Text Components
+        private TextMeshProUGUI _healthValueText;
+        private TextMeshProUGUI _autoPotValueText;
+        private TextMeshProUGUI _potKeyValueText;
+        private TextMeshProUGUI _toggleValueText;
+        private TextMeshProUGUI _nexusValueText;
+        
+        // Save Button Components
+        private Image _saveButtonImage;
+        private TextMeshProUGUI _saveButtonText;
 
         private Vector3 _originalScale;
         private Vector2 _originalSize;
-
+        
         public ConfigDisplay(ModConfig config, MelonLogger.Instance logger)
         {
             _config = config;
@@ -124,6 +133,7 @@ namespace AutoNexus.UI
                 }
             }
         }
+        
 
         private void CreateUI()
         {
@@ -172,15 +182,10 @@ namespace AutoNexus.UI
             panelRect.sizeDelta = new Vector2(PANEL_WIDTH, PANEL_HEIGHT);
             panelRect.localScale = Vector3.one * DESIRED_SCALE;
 
-            _originalScale = panelRect.localScale;
-            _originalSize = panelRect.sizeDelta;
-
             var background = _configPanel.AddComponent<Image>();
             background.color = PANEL_COLOR;
         }
-    
-
-
+        
         private void CreateHeader()
         {
             GameObject headerObj = new GameObject("Header");
@@ -223,7 +228,7 @@ namespace AutoNexus.UI
         {
             float yOffset = -(HEADER_HEIGHT + 10);
             float totalRowHeight = ROW_HEIGHT + ROW_PADDING;
-
+    
             CreateConfigRow("Health", _config.HealthThreshold.Value * 100 + "%", ref _healthThresholdInput, ref _healthValueText, yOffset);
             yOffset -= totalRowHeight;
             CreateDivider(yOffset + DIVIDER_MARGIN);
@@ -245,7 +250,8 @@ namespace AutoNexus.UI
             CreateDivider(yOffset + DIVIDER_MARGIN);
         }
 
-        private void CreateConfigRow(string label, string currentValue, ref TMP_InputField inputField, ref TextMeshProUGUI valueText, float yOffset)
+        private void CreateConfigRow(string label, string currentValue, ref TMP_InputField inputField,
+            ref TextMeshProUGUI valueText, float yOffset)
         {
             GameObject row = new GameObject($"Row_{label}");
             row.transform.SetParent(_configPanel.transform, false);
@@ -256,7 +262,6 @@ namespace AutoNexus.UI
             rowRect.pivot = new Vector2(0.5f, 1);
             rowRect.anchoredPosition = new Vector2(0, yOffset);
             rowRect.sizeDelta = new Vector2(-20, ROW_HEIGHT);
-
 
             GameObject labelObj = new GameObject("Label");
             labelObj.transform.SetParent(row.transform, false);
@@ -273,7 +278,6 @@ namespace AutoNexus.UI
             labelRect.anchoredPosition = Vector2.zero;
             labelRect.sizeDelta = Vector2.zero;
 
-
             GameObject valueObj = new GameObject("Value");
             valueObj.transform.SetParent(row.transform, false);
             valueText = valueObj.AddComponent<TextMeshProUGUI>();
@@ -289,7 +293,7 @@ namespace AutoNexus.UI
             valueRect.anchoredPosition = Vector2.zero;
             valueRect.sizeDelta = Vector2.zero;
 
-            CreateInputField(row.transform, ref inputField, 0.6f, 0.95f);
+            CreateInputField(row.transform, ref inputField, 0.6f, 0.85f);
         }
 
         private void CreateInputField(Transform parent, ref TMP_InputField inputField, float minX, float maxX)
@@ -308,6 +312,7 @@ namespace AutoNexus.UI
             inputText.fontSize = 12;
             inputText.color = VALUE_COLOR;
             inputText.alignment = TextAlignmentOptions.Left;
+            inputText.alignment = TextAlignmentOptions.Center;
 
             RectTransform textRect = inputText.rectTransform;
             textRect.anchorMin = Vector2.zero;
@@ -318,13 +323,14 @@ namespace AutoNexus.UI
             inputField.textComponent = inputText;
             inputField.targetGraphic = bgImage;
             inputField.textViewport = inputObj.GetComponent<RectTransform>();
-
+            
             RectTransform inputRect = inputField.GetComponent<RectTransform>();
-            inputRect.anchorMin = new Vector2(minX, 0);
-            inputRect.anchorMax = new Vector2(maxX, 1);
+            inputRect.anchorMin = new Vector2(minX, 0.2f);
+            inputRect.anchorMax = new Vector2(maxX, 0.8f);
             inputRect.pivot = new Vector2(0, 0.5f);
             inputRect.anchoredPosition = Vector2.zero;
-            inputRect.sizeDelta = Vector2.zero;
+            inputRect.sizeDelta = new Vector2(INPUT_FIELD_WIDTH, -4);
+
         }
 
         private void CreateSaveButton()
@@ -358,13 +364,14 @@ namespace AutoNexus.UI
 
             button.onClick.AddListener(DelegateSupport.ConvertDelegate<UnityAction>(() => SavePreferences()));
         }
-
+        
         private void SavePreferences()
         {
             try
             {
                 bool anyChanges = false;
 
+                
                 if (!string.IsNullOrEmpty(_healthThresholdInput.text) && 
                     float.TryParse(_healthThresholdInput.text, out float healthThreshold))
                 {
@@ -405,8 +412,6 @@ namespace AutoNexus.UI
                     anyChanges = true;
                 }
 
-                ClearInputFields();
-
                 if (anyChanges)
                 {
                     MelonPreferences.Save();
@@ -417,7 +422,8 @@ namespace AutoNexus.UI
                 else
                 {
                     ShowSaveWarning();
-                }}
+                }
+            }
             catch (System.Exception e)
             {
                 _logger.Error($"Error saving settings: {e.Message}");
@@ -486,10 +492,6 @@ namespace AutoNexus.UI
 
         private void ClearInputFields()
         {
-            if (_healthThresholdInput != null)
-                _healthThresholdInput.text = "";
-            if (_autoPotThresholdInput != null)
-                _autoPotThresholdInput.text = "";
             if (_autoPotKeyInput != null)
                 _autoPotKeyInput.text = "";
             if (_autoPotToggleInput != null)

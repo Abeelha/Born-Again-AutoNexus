@@ -10,7 +10,7 @@ namespace AutoNexus.Features
     {
         private readonly MelonLogger.Instance _logger;
         private bool _isActive = false;
-        private float _checkInterval = 0.5f;
+        private float _checkInterval = 1f;
         private HashSet<int> _processedChunkIds;
         private int _lastChunkCount = 0;
 
