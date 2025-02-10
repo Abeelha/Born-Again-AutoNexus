@@ -11,5 +11,9 @@
 	<ItemGroup>
 		<Reference Include="Libs\*.dll" />
 	</ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="COPY &quot;$(TargetPath)&quot; &quot;D:/Steam/steamapps/common/Born Again/Mods&quot;" />
+	</Target>
 	
 </Project>

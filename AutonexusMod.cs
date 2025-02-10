@@ -2,6 +2,8 @@
 using AutoNexus.Configuration;
 using AutoNexus.Features;
 using AutoNexus.Utils;
+using AutoNexus.UI;
+using UnityEngine;
 
 namespace AutoNexus
 {
@@ -16,6 +18,7 @@ namespace AutoNexus
         private NameChanger nameChanger;
         private AntiAFK antiAFK;
         private AutoPot autoPot;
+        private ConfigDisplay configDisplay;
 
         public override void OnInitializeMelon()
         {
@@ -36,6 +39,20 @@ namespace AutoNexus
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
             roofRemover.RemoveRoofs();
+
+            var canvas = GameObject.Find("Canvas")?.GetComponent<Canvas>();
+            if (canvas != null)
+            {
+                if (configDisplay == null)
+                {
+                    configDisplay = new ConfigDisplay(config, LoggerInstance);
+                }
+                configDisplay.Initialize(canvas);
+            }
+            else
+            {
+                LoggerInstance.Error("Canvas not found in scene: " + sceneName);
+            }
         }
 
         public override void OnUpdate()
@@ -46,6 +63,12 @@ namespace AutoNexus
             antiAFK?.Update();
             autoPot?.Update();
             autoNexus?.Update();
+            configDisplay?.Update();
+            
+            if (Input.GetKeyDown(KeyCode.Insert))
+            {
+                configDisplay?.ToggleVisibility();
+            }
         }
 
         public override void OnApplicationQuit()
