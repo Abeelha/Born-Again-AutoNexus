@@ -3,6 +3,7 @@ using AutoNexus.Configuration;
 using MelonLoader;
 using AutoNexus.Constants;
 using AutoNexus.Utils;
+using AutoNexus.Helpers;
 
 namespace AutoNexus.Features
 {
@@ -72,33 +73,27 @@ namespace AutoNexus.Features
 
         private void UpdateDisconnectKey()
         {
-            string keyString = _config.DisconnectKey.Value.ToUpper();
-            if (keyString == "ENTER") keyString = "RETURN";
-
             try
             {
-                _currentDisconnectKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), keyString, ignoreCase: true);
+                _currentDisconnectKey = KeyInputHelper.ParseKeyInput(_config.DisconnectKey.Value);
             }
-            catch (System.ArgumentException)
+            catch (Exception ex)
             {
-                _logger.Error($"Invalid KeyCode '{_config.DisconnectKey.Value}' in config. Reverting to default key 'R'.");
-                _currentDisconnectKey = KeyCode.R;
+                _logger.Error($"Invalid KeyCode '{_config.DisconnectKey.Value}' in config. Reverting to default key 'F'. Exception: {ex.Message}");
+                _currentDisconnectKey = KeyCode.F;
                 _config.DisconnectKey.Value = ModDefaults.DISCONNECT_KEY;
             }
         }
 
         private void UpdateToggleChatKey()
         {
-            string keyString = ModDefaults.TOGGLE_CHAT_KEY.ToUpper();
-            if (keyString == "ENTER") keyString = "RETURN";
-
             try
             {
-                _currentToggleChatKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), keyString, ignoreCase: true);
+                _currentToggleChatKey = KeyInputHelper.ParseKeyInput(ModDefaults.TOGGLE_CHAT_KEY);
             }
-            catch (System.ArgumentException)
+            catch (Exception ex)
             {
-                _logger.Error("Invalid ToggleChatKey in defaults. Reverting to default key 'Return'.");
+                _logger.Error($"Invalid ToggleChatKey in defaults. Reverting to default key 'Return'. Exception: {ex.Message}");
                 _currentToggleChatKey = KeyCode.Return;
             }
         }

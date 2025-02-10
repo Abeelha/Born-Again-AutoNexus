@@ -7,6 +7,7 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 using System.Collections;
 using UnityEngine.UI;
+using AutoNexus.Helpers;
 
 namespace AutoNexus.UI
 {
@@ -87,7 +88,7 @@ namespace AutoNexus.UI
 
         public void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Insert))
+            if (Input.GetKeyDown(KeyCode.O))
             {
                 if (!_isInitialized)
                 {
@@ -371,7 +372,7 @@ namespace AutoNexus.UI
             {
                 bool anyChanges = false;
 
-                
+                // NEXA COM QUANTOS MEU NOBRO
                 if (!string.IsNullOrEmpty(_healthThresholdInput.text) && 
                     float.TryParse(_healthThresholdInput.text, out float healthThreshold))
                 {
@@ -383,6 +384,7 @@ namespace AutoNexus.UI
                     }
                 }
 
+                // NAO TEM DEDO PRA TOMAR POT EM QUANTO DE HP NEGO?
                 if (!string.IsNullOrEmpty(_autoPotThresholdInput.text) &&
                     float.TryParse(_autoPotThresholdInput.text, out float autoPotThreshold))
                 {
@@ -394,22 +396,37 @@ namespace AutoNexus.UI
                     }
                 }
 
+                // AutoPot Key
                 if (!string.IsNullOrWhiteSpace(_autoPotKeyInput.text))
                 {
-                    _config.AutoPotKey.Value = _autoPotKeyInput.text;
-                    anyChanges = true;
+                    string potKey = KeyInputHelper.SanitizeKeyInput(_autoPotKeyInput.text);
+                    if (!string.IsNullOrEmpty(potKey))
+                    {
+                        _config.AutoPotKey.Value = potKey;
+                        anyChanges = true;
+                    }
                 }
 
+                // AutoPot Toggle Key
                 if (!string.IsNullOrWhiteSpace(_autoPotToggleInput.text))
                 {
-                    _config.AutoPotToggleKey.Value = _autoPotToggleInput.text;
-                    anyChanges = true;
+                    string toggleKey = KeyInputHelper.SanitizeKeyInput(_autoPotToggleInput.text);
+                    if (!string.IsNullOrEmpty(toggleKey))
+                    {
+                        _config.AutoPotToggleKey.Value = toggleKey;
+                        anyChanges = true;
+                    }
                 }
 
+                // nEXUS Key
                 if (!string.IsNullOrWhiteSpace(_disconnectKeyInput.text))
                 {
-                    _config.DisconnectKey.Value = _disconnectKeyInput.text;
-                    anyChanges = true;
+                    string disconnectKey = KeyInputHelper.SanitizeKeyInput(_disconnectKeyInput.text);
+                    if (!string.IsNullOrEmpty(disconnectKey))
+                    {
+                        _config.DisconnectKey.Value = disconnectKey;
+                        anyChanges = true;
+                    }
                 }
 
                 if (anyChanges)

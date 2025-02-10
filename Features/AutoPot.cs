@@ -8,6 +8,7 @@ using AutoNexus.Constants;
 using AutoNexus.Helpers;
 using AutoNexus.Utils;
 using System.Runtime.CompilerServices;
+using AutoNexus.Helpers;
 
 namespace AutoNexus.Features
 {
@@ -43,21 +44,12 @@ namespace AutoNexus.Features
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ParseAutoPotKey()
         {
-            string keyString = _config.AutoPotKey.Value.Trim();
-            if (keyString.Length == 1)
-            {
-                char ch = keyString[0];
-                if (char.IsDigit(ch))
-                    keyString = "Alpha" + ch;
-                else if (char.IsLetter(ch))
-                    keyString = char.ToUpper(ch).ToString();
-            }
             try
             {
-                KeyCode keyCode = (KeyCode)System.Enum.Parse(typeof(KeyCode), keyString, true);
+                KeyCode keyCode = KeyInputHelper.ParseKeyInput(_config.AutoPotKey.Value);
                 _autoPotKey = (byte)keyCode;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _logger.Error($"Invalid AutoPotKey '{_config.AutoPotKey.Value}'. Reverting to default '1'. Exception: {ex.Message}");
                 _autoPotKey = (byte)KeyCode.Alpha1;
@@ -68,16 +60,13 @@ namespace AutoNexus.Features
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateAutoPotToggleKey()
         {
-            string keyString = _config.AutoPotToggleKey.Value.ToUpper();
-            if (keyString == "ENTER") keyString = "RETURN";
-
             try
             {
-                _currentAutoPotToggleKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), keyString, true);
+                _currentAutoPotToggleKey = KeyInputHelper.ParseKeyInput(_config.AutoPotToggleKey.Value);
             }
-            catch (System.ArgumentException)
+            catch (Exception ex)
             {
-                _logger.Error($"Invalid AutoPotToggleKey '{_config.AutoPotToggleKey.Value}' in config. Reverting to default 'H'.");
+                _logger.Error($"Invalid AutoPotToggleKey '{_config.AutoPotToggleKey.Value}' in config. Reverting to default 'H'. Exception: {ex.Message}");
                 _currentAutoPotToggleKey = KeyCode.H;
                 _config.AutoPotToggleKey.Value = "H";
             }
@@ -129,6 +118,7 @@ namespace AutoNexus.Features
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update()
         {
+            UpdateAutoPotToggleKey();
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
                 Input.GetKeyDown(_currentAutoPotToggleKey))
             {
