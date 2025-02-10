@@ -1,12 +1,8 @@
 using AutoNexus.Configuration;
 using Il2CppInterop.Runtime;
-using MelonLoader;
-using UnityEngine;
-using Il2CppTMPro;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using System.Collections;
-using UnityEngine.UI;
 
 namespace AutoNexus.UI
 {

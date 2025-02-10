@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using MelonLoader;
 using AutoNexus.Constants;
 
 namespace AutoNexus.Utils

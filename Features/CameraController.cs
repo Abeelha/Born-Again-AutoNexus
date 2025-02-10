@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-using AutoNexus.Configuration;
-using MelonLoader;
+﻿using AutoNexus.Configuration;
 using AutoNexus.Constants;
 using Il2Cpp;
 

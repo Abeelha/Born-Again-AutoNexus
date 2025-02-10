@@ -1,7 +1,5 @@
 using System.Collections;
 using System.Runtime.InteropServices;
-using UnityEngine;
-using MelonLoader;
 using Il2Cpp;
 using AutoNexus.Configuration;
 using AutoNexus.Constants;

@@ -1,5 +1,4 @@
-﻿using MelonLoader;
-using AutoNexus.Constants;
+﻿using AutoNexus.Constants;
 
 namespace AutoNexus.Configuration
 {

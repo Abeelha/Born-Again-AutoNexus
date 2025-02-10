@@ -1,5 +1,3 @@
-using UnityEngine;
-using MelonLoader;
 using Il2Cpp;
 using System.Collections;
 using Il2CppInterop.Runtime;

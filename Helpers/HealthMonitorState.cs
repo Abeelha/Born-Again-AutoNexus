@@ -1,6 +1,3 @@
-using MelonLoader;
-using UnityEngine;
-using System;
 using System.Runtime.CompilerServices;
 
 namespace AutoNexus.Helpers

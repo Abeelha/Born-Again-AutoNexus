@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-using AutoNexus.Configuration;
-using MelonLoader;
+﻿using AutoNexus.Configuration;
 using System.Collections;
 using AutoNexus.Constants;
 using AutoNexus.Helpers;

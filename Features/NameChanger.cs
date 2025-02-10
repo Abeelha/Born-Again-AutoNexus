@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-using MelonLoader;
-using AutoNexus.Configuration;
+﻿using AutoNexus.Configuration;
 
 namespace AutoNexus.Features
 {
