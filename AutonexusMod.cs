@@ -33,6 +33,8 @@ namespace AutoNexus
             nameChanger = new NameChanger(config, LoggerInstance, "Character(Clone)");
             antiAFK = new AntiAFK(LoggerInstance);
             autoPot = new AutoPot(LoggerInstance, config, soundManager);
+            configDisplay = new ConfigDisplay(config, LoggerInstance);
+
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
         }
         
@@ -43,11 +45,7 @@ namespace AutoNexus
             var canvas = GameObject.Find("Canvas")?.GetComponent<Canvas>();
             if (canvas != null)
             {
-                if (configDisplay == null)
-                {
-                    configDisplay = new ConfigDisplay(config, LoggerInstance);
-                }
-                configDisplay.Initialize(canvas);
+                configDisplay?.Initialize(canvas);
             }
             else
             {
@@ -63,6 +61,7 @@ namespace AutoNexus
             antiAFK?.Update();
             autoPot?.Update();
             autoNexus?.Update();
+            configDisplay?.Update();
             configDisplay?.Update();
             
             if (Input.GetKeyDown(KeyCode.Insert))
