@@ -14,7 +14,7 @@ namespace AutoNexus.UI
     public class ConfigDisplay
     {
         // UI Layout Constants
-        private const float PANEL_WIDTH = 150f;
+        private const float PANEL_WIDTH = 200f;
         private const float PANEL_HEIGHT = 220f;
         private const float DESIRED_SCALE = 0.5f;
         
@@ -25,18 +25,17 @@ namespace AutoNexus.UI
         private const float SAVE_BUTTON_WIDTH = 60f;
         private const float DIVIDER_MARGIN = 1.5f;
         
-        private const float INPUT_FIELD_WIDTH = 20f;
-        private const float SLIDER_WIDTH = 120f;
+        private const float INPUT_FIELD_WIDTH = 10f;
 
         // Colors
-        private readonly Color PANEL_COLOR = new Color(0.08f, 0.04f, 0.16f, 0.95f);
-        private readonly Color LABEL_COLOR = new Color(0.95f, 0.4f, 0.95f, 1f);
-        private readonly Color VALUE_COLOR = new Color(0.4f, 0.95f, 0.95f, 1f);
-        private readonly Color INPUT_BG_COLOR = new Color(0.12f, 0.08f, 0.2f, 1f);
-        private readonly Color BUTTON_COLOR = new Color(0.95f, 0.2f, 0.6f, 1f);
-        private readonly Color DIVIDER_COLOR = new Color(0.95f, 0.4f, 0.95f, 0.2f);
-        private readonly Color SUCCESS_COLOR = new Color(0.2f, 0.95f, 0.4f, 1f);
-        private readonly Color ERROR_COLOR = new Color(0.95f, 0.2f, 0.2f, 1f);
+        private readonly Color PANEL_COLOR = new Color(0.196f, 0.251f, 0.282f, 0.95f); 
+        private readonly Color LABEL_COLOR = new Color(0.863f, 0.365f, 0.322f, 1f);
+        private readonly Color VALUE_COLOR = new Color(0.250f, 0.600f, 0.700f, 1f);
+        private readonly Color INPUT_BG_COLOR = new Color(0.322f, 0.376f, 0.412f, 1f);
+        private readonly Color BUTTON_COLOR = new Color(0.686f, 0.231f, 0.365f, 1f);
+        private readonly Color DIVIDER_COLOR = new Color(0.443f, 0.443f, 0.443f, 0.5f);
+        private readonly Color SUCCESS_COLOR = new Color(0.298f, 0.686f, 0.314f, 1f);
+        private readonly Color ERROR_COLOR = new Color(0.914f, 0.176f, 0.235f, 1f);
 
         // Configuration and Logging
         private readonly ModConfig _config;
@@ -88,7 +87,7 @@ namespace AutoNexus.UI
 
         public void Update()
         {
-            if (Input.GetKeyDown(KeyCode.O))
+            if (Input.GetKeyDown(KeyCode.Insert))
             {
                 if (!_isInitialized)
                 {
@@ -230,25 +229,27 @@ namespace AutoNexus.UI
             float yOffset = -(HEADER_HEIGHT + 10);
             float totalRowHeight = ROW_HEIGHT + ROW_PADDING;
     
-            CreateConfigRow("Health", _config.HealthThreshold.Value * 100 + "%", ref _healthThresholdInput, ref _healthValueText, yOffset);
-            yOffset -= totalRowHeight;
-            CreateDivider(yOffset + DIVIDER_MARGIN);
-
-            CreateConfigRow("AutoPot", _config.AutoPotHealthThreshold.Value * 100 + "%", ref _autoPotThresholdInput, ref _autoPotValueText, yOffset);
-            yOffset -= totalRowHeight;
-            CreateDivider(yOffset + DIVIDER_MARGIN);
-
-            CreateConfigRow("PotKey", _config.AutoPotKey.Value, ref _autoPotKeyInput, ref _potKeyValueText, yOffset);
-            yOffset -= totalRowHeight;
-            CreateDivider(yOffset + DIVIDER_MARGIN);
-
-            CreateConfigRow("Toggle", _config.AutoPotToggleKey.Value, ref _autoPotToggleInput, ref _toggleValueText, yOffset);
-            yOffset -= totalRowHeight;
-            CreateDivider(yOffset + DIVIDER_MARGIN);
-
             CreateConfigRow("Nexus", _config.DisconnectKey.Value, ref _disconnectKeyInput, ref _nexusValueText, yOffset);
             yOffset -= totalRowHeight;
             CreateDivider(yOffset + DIVIDER_MARGIN);
+            
+            CreateConfigRow("On/OFF AutoPot", _config.AutoPotToggleKey.Value, ref _autoPotToggleInput, ref _toggleValueText, yOffset);
+            yOffset -= totalRowHeight;
+            CreateDivider(yOffset + DIVIDER_MARGIN);
+
+            CreateConfigRow("Pot Key", _config.AutoPotKey.Value, ref _autoPotKeyInput, ref _potKeyValueText, yOffset);
+            yOffset -= totalRowHeight;
+            CreateDivider(yOffset + DIVIDER_MARGIN);
+            
+            CreateConfigRow("AutoNexus%", _config.HealthThreshold.Value * 100 + "%", ref _healthThresholdInput, ref _healthValueText, yOffset);
+            yOffset -= totalRowHeight;
+            CreateDivider(yOffset + DIVIDER_MARGIN);
+
+            CreateConfigRow("AutoPot%", _config.AutoPotHealthThreshold.Value * 100 + "%", ref _autoPotThresholdInput, ref _autoPotValueText, yOffset);
+            yOffset -= totalRowHeight;
+            CreateDivider(yOffset + DIVIDER_MARGIN);
+
+
         }
 
         private void CreateConfigRow(string label, string currentValue, ref TMP_InputField inputField,
@@ -274,7 +275,7 @@ namespace AutoNexus.UI
 
             RectTransform labelRect = labelText.rectTransform;
             labelRect.anchorMin = new Vector2(0, 0);
-            labelRect.anchorMax = new Vector2(0.3f, 1);
+            labelRect.anchorMax = new Vector2(0.5f, 1);
             labelRect.pivot = new Vector2(0, 0.5f);
             labelRect.anchoredPosition = Vector2.zero;
             labelRect.sizeDelta = Vector2.zero;
@@ -288,13 +289,13 @@ namespace AutoNexus.UI
             valueText.alignment = TextAlignmentOptions.Left;
 
             RectTransform valueRect = valueText.rectTransform;
-            valueRect.anchorMin = new Vector2(0.3f, 0);
-            valueRect.anchorMax = new Vector2(0.6f, 1);
+            valueRect.anchorMin = new Vector2(0.5f, 0);
+            valueRect.anchorMax = new Vector2(0.7f, 1);
             valueRect.pivot = new Vector2(0, 0.5f);
             valueRect.anchoredPosition = Vector2.zero;
             valueRect.sizeDelta = Vector2.zero;
 
-            CreateInputField(row.transform, ref inputField, 0.6f, 0.85f);
+            CreateInputField(row.transform, ref inputField, 0.7f, 0.95f);
         }
 
         private void CreateInputField(Transform parent, ref TMP_InputField inputField, float minX, float maxX)
@@ -434,6 +435,7 @@ namespace AutoNexus.UI
                     MelonPreferences.Save();
                     ShowSaveSuccess();
                     UpdateCurrentValues();
+                    ClearInputFields();
                     _logger.Msg("Settings saved successfully!");
                 }
                 else
@@ -506,15 +508,14 @@ namespace AutoNexus.UI
             if (_nexusValueText != null)
                 _nexusValueText.text = _config.DisconnectKey.Value;
         }
-
+        
         private void ClearInputFields()
         {
-            if (_autoPotKeyInput != null)
-                _autoPotKeyInput.text = "";
-            if (_autoPotToggleInput != null)
-                _autoPotToggleInput.text = "";
-            if (_disconnectKeyInput != null)
-                _disconnectKeyInput.text = "";
+            _healthThresholdInput.text = "";
+            _autoPotThresholdInput.text = "";
+            _autoPotKeyInput.text = "";
+            _autoPotToggleInput.text = "";
+            _disconnectKeyInput.text = "";
         }
     }
 }
