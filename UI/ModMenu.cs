@@ -16,6 +16,7 @@ public class ConfigDisplay
     private const float SAVE_BUTTON_HEIGHT = 24f;
     private const float SAVE_BUTTON_WIDTH = 80f;
     private const float DIVIDER_MARGIN = 2f;
+    private const float DESIRED_SCALE = 0.5f;
     private readonly ModConfig _config;
     private readonly MelonLogger.Instance _logger;
     private readonly Color BUTTON_COLOR = new(0.95f, 0.2f, 0.6f, 1f);
@@ -39,8 +40,13 @@ public class ConfigDisplay
 
 
     private TextMeshProUGUI _healthValueText;
+    private bool _isInitialized;
     private bool _isVisible = true;
+    private Canvas _mainCanvas;
     private TextMeshProUGUI _nexusValueText;
+
+    private Vector3 _originalScale;
+    private Vector2 _originalSize;
     private TextMeshProUGUI _potKeyValueText;
     private Image _saveButtonImage;
     private TextMeshProUGUI _saveButtonText;
@@ -60,11 +66,77 @@ public class ConfigDisplay
             return;
         }
 
-        CreatePanel(canvas);
+        _mainCanvas = canvas;
+    }
+
+    public void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Insert))
+        {
+            if (!_isInitialized)
+            {
+                CreateUI();
+                _isInitialized = true;
+                _isVisible = true;
+            }
+            else
+            {
+                if (_configPanel != null)
+                {
+                    _isVisible = !_isVisible;
+                    _configPanel.SetActive(_isVisible);
+                }
+                else
+                {
+                    CreateUI();
+                    _isVisible = true;
+                }
+            }
+        }
+
+        if (_configPanel != null && _isVisible)
+        {
+            var rect = _configPanel.GetComponent<RectTransform>();
+            if (rect != null)
+            {
+                if (rect.localScale != Vector3.one * DESIRED_SCALE)
+                {
+                    rect.localScale = Vector3.one * DESIRED_SCALE;
+                }
+
+                if (rect.sizeDelta != new Vector2(PANEL_WIDTH, PANEL_HEIGHT))
+                {
+                    rect.sizeDelta = new Vector2(PANEL_WIDTH, PANEL_HEIGHT);
+                }
+            }
+
+            var scaler = _configPanel.GetComponent<CanvasScaler>();
+            if (scaler != null && scaler.scaleFactor != DESIRED_SCALE)
+            {
+                scaler.scaleFactor = DESIRED_SCALE;
+            }
+        }
+    }
+
+    private void CreateUI()
+    {
+        if (_configPanel != null) GameObject.Destroy(_configPanel);
+
+        CreatePanel(_mainCanvas);
         CreateHeader();
         CreateConfigDisplay();
         CreateSaveButton();
         UpdateCurrentValues();
+        _configPanel!.SetActive(true);
+    }
+
+    public void ToggleVisibility()
+    {
+        if (_configPanel != null)
+        {
+            _isVisible = !_isVisible;
+            _configPanel.SetActive(_isVisible);
+        }
     }
 
     private void CreatePanel(Canvas canvas)
@@ -72,18 +144,13 @@ public class ConfigDisplay
         _configPanel = new GameObject("ConfigPanel");
         _configPanel.transform.SetParent(canvas.transform, false);
 
-
         var panelCanvas = _configPanel.AddComponent<Canvas>();
         panelCanvas.overrideSorting = true;
         panelCanvas.sortingOrder = 100;
 
-
         var scaler = _configPanel.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-        scaler.matchWidthOrHeight = 1;
-
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+        scaler.scaleFactor = DESIRED_SCALE;
 
         _configPanel.AddComponent<GraphicRaycaster>();
 
@@ -93,11 +160,15 @@ public class ConfigDisplay
         panelRect.pivot = new Vector2(1, 1);
         panelRect.anchoredPosition = new Vector2(-10, -10);
         panelRect.sizeDelta = new Vector2(PANEL_WIDTH, PANEL_HEIGHT);
-        panelRect.localScale = Vector3.one;
+        panelRect.localScale = Vector3.one * DESIRED_SCALE;
+
+        _originalScale = panelRect.localScale;
+        _originalSize = panelRect.sizeDelta;
 
         var background = _configPanel.AddComponent<Image>();
         background.color = PANEL_COLOR;
     }
+
 
     private void CreateHeader()
     {
@@ -419,18 +490,5 @@ public class ConfigDisplay
             _autoPotToggleInput.text = "";
         if (_disconnectKeyInput != null)
             _disconnectKeyInput.text = "";
-    }
-
-    public void ToggleVisibility()
-    {
-        if (_configPanel != null)
-        {
-            _isVisible = !_isVisible;
-            _configPanel.SetActive(_isVisible);
-        }
-    }
-
-    public void Update()
-    {
     }
 }
