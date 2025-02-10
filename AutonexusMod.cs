@@ -31,6 +31,8 @@ public class AutonexusMod : MelonMod
         nameChanger = new NameChanger(config, LoggerInstance, "Character(Clone)");
         antiAFK = new AntiAFK(LoggerInstance);
         autoPot = new AutoPot(LoggerInstance, config, soundManager);
+        configDisplay = new ConfigDisplay(config, LoggerInstance);
+        
         LoggerInstance.Msg("AutoNexus Mod Initialized.");
     }
 
@@ -41,11 +43,7 @@ public class AutonexusMod : MelonMod
         var canvas = GameObject.Find("Canvas")?.GetComponent<Canvas>();
         if (canvas != null)
         {
-            if (configDisplay == null)
-            {
-                configDisplay = new ConfigDisplay(config, LoggerInstance);
-            }
-
+            configDisplay ??= new ConfigDisplay(config, LoggerInstance);
             configDisplay.Initialize(canvas);
         }
         else
