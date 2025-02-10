@@ -6,6 +6,7 @@ using Il2CppTMPro;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using System.Collections;
+using AutoNexus.Features;
 using UnityEngine.UI;
 using AutoNexus.Helpers;
 
@@ -13,9 +14,8 @@ namespace AutoNexus.UI
 {
     public class ConfigDisplay
     {
-        // UI Layout Constants
         private const float PANEL_WIDTH = 200f;
-        private const float PANEL_HEIGHT = 220f;
+        private const float PANEL_HEIGHT = 250f;
         private const float DESIRED_SCALE = 0.5f;
         
         private const float ROW_HEIGHT = 25f;
@@ -40,6 +40,7 @@ namespace AutoNexus.UI
         // Configuration and Logging
         private readonly ModConfig _config;
         private readonly MelonLogger.Instance _logger;
+        private readonly NameChanger _nameChanger;
 
         // UI Components
         private GameObject _configPanel;
@@ -60,6 +61,8 @@ namespace AutoNexus.UI
         private TextMeshProUGUI _potKeyValueText;
         private TextMeshProUGUI _toggleValueText;
         private TextMeshProUGUI _nexusValueText;
+        private TMP_InputField _playerNameInput;
+        private TextMeshProUGUI _playerNameValueText;
         
         // Save Button Components
         private Image _saveButtonImage;
@@ -68,10 +71,11 @@ namespace AutoNexus.UI
         private Vector3 _originalScale;
         private Vector2 _originalSize;
         
-        public ConfigDisplay(ModConfig config, MelonLogger.Instance logger)
+        public ConfigDisplay(ModConfig config, MelonLogger.Instance logger, NameChanger nameChanger)
         {
             _config = config;
             _logger = logger;
+            _nameChanger = nameChanger;
         }
 
         public void Initialize(Canvas canvas)
@@ -228,6 +232,10 @@ namespace AutoNexus.UI
         {
             float yOffset = -(HEADER_HEIGHT + 10);
             float totalRowHeight = ROW_HEIGHT + ROW_PADDING;
+            
+            CreateConfigRow("Player Name", _config.PlayerName.Value, ref _playerNameInput, ref _playerNameValueText, yOffset);
+            yOffset -= totalRowHeight;
+            CreateDivider(yOffset + DIVIDER_MARGIN);
     
             CreateConfigRow("Nexus", _config.DisconnectKey.Value, ref _disconnectKeyInput, ref _nexusValueText, yOffset);
             yOffset -= totalRowHeight;
@@ -429,6 +437,19 @@ namespace AutoNexus.UI
                         anyChanges = true;
                     }
                 }
+                
+                // Player Name
+                if (!string.IsNullOrWhiteSpace(_playerNameInput.text))
+                {
+                    string playerName = _playerNameInput.text.Trim();
+                    if (!string.IsNullOrEmpty(playerName))
+                    {
+                        _config.PlayerName.Value = playerName;
+                        anyChanges = true;
+
+                        _nameChanger?.ForceNameUpdate();
+                    }
+                }
 
                 if (anyChanges)
                 {
@@ -507,6 +528,9 @@ namespace AutoNexus.UI
             
             if (_nexusValueText != null)
                 _nexusValueText.text = _config.DisconnectKey.Value;
+            
+            if (_playerNameValueText != null)
+                _playerNameValueText.text = _config.PlayerName.Value;
         }
         
         private void ClearInputFields()
@@ -516,6 +540,7 @@ namespace AutoNexus.UI
             _autoPotKeyInput.text = "";
             _autoPotToggleInput.text = "";
             _disconnectKeyInput.text = "";
+            _playerNameInput.text = "";
         }
     }
 }

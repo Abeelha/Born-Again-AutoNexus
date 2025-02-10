@@ -33,6 +33,21 @@ namespace AutoNexus.Features
                 ApplyCustomName(currentPlayerObject);
             }
         }
+        public void ForceNameUpdate()
+        {
+            if (_cachedPlayerObject != null)
+            {
+                ApplyCustomName(_cachedPlayerObject);
+            }
+            else
+            {
+                GameObject currentPlayerObject = GameObject.Find(_playerObjectName);
+                if (currentPlayerObject != null)
+                {
+                    ApplyCustomName(currentPlayerObject);
+                }
+            }
+        }
 
         private void ApplyCustomName(GameObject playerObject)
         {
