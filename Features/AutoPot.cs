@@ -9,6 +9,7 @@ using AutoNexus.Helpers;
 using AutoNexus.Utils;
 using System.Runtime.CompilerServices;
 using AutoNexus.Helpers;
+using Il2CppRonin.Model.Enums;
 
 namespace AutoNexus.Features
 {
@@ -19,6 +20,8 @@ namespace AutoNexus.Features
         private readonly SoundManager _soundManager;
         private GameObject _playerCharacter;
         private Character _characterComponent;
+        private Entity _entityComponent;
+        private Il2CppRonin.Model.Structs.Stats _entityStats;
         private HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
         private bool _isSimulatingKeyPress;
         private byte _autoPotKey;
@@ -91,7 +94,6 @@ namespace AutoNexus.Features
                 yield return waitInterval;
             }
         }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryInitializePlayer()
         {
@@ -106,10 +108,18 @@ namespace AutoNexus.Features
                 return false;
             }
 
+            _entityComponent = _playerCharacter.GetComponent<Il2Cpp.Entity>();
+            if (_entityComponent == null)
+            {
+                _logger.Warning("AutoPot: Entity component not found.");
+                return false;
+            }
+
             int currentHealth = _characterComponent.Health;
             _monitorState.LastHealthValue = currentHealth;
-            _monitorState.PreviousStableHealth = currentHealth;
-            _monitorState.MaxHealth = currentHealth;
+
+            int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+            _monitorState.UpdateMaxHealth(maxHealth, _logger);
 
             _logger.Msg($"AutoPot: Initial max health set to {_monitorState.MaxHealth}");
             return true;
@@ -133,7 +143,9 @@ namespace AutoNexus.Features
             if (!ValidatePlayerState())
                 return;
 
-            HealthMonitoringHelper.UpdateStability(_monitorState, _characterComponent.Health, MIN_UPDATE_INTERVAL, ModDefaults.HEALTH_STABILITY_TIME, _logger);
+            int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+            _monitorState.UpdateMaxHealth(maxHealth, _logger);
+            
             ProcessHealthCheck();
         }
 
@@ -151,6 +163,14 @@ namespace AutoNexus.Features
             if (_characterComponent != null)
             {
                 _logger.Msg("Player reconnected. Starting grace period...");
+
+                _entityComponent = _playerCharacter.GetComponent<Il2Cpp.Entity>();
+                if (_entityComponent != null)
+                {
+                    int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+                    _monitorState.UpdateMaxHealth(maxHealth, _logger);
+                }
+
                 StartGracePeriod(ModDefaults.GRACE_PERIOD_DEFAULT);
                 return false;
             }
@@ -161,18 +181,20 @@ namespace AutoNexus.Features
         private void ProcessHealthCheck()
         {
             int currentHealth = _characterComponent.Health;
-            float healthRatio = _monitorState.MaxHealth > 0 ? (float)currentHealth / _monitorState.MaxHealth : 1f;
+            int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+            _monitorState.UpdateMaxHealth(maxHealth, _logger);
+
+            float healthRatio = _monitorState.MaxHealth > 0 ? 
+                (float)currentHealth / _monitorState.MaxHealth : 1f;
 
             bool shouldPot = false;
             string reason = "";
-
 
             if (_monitorState.HealthDropRate < RAPID_HEALTH_DROP_THRESHOLD && healthRatio < EMERGENCY_HEALTH_RATIO)
             {
                 shouldPot = true;
                 reason = $"rapid health drop ({_monitorState.HealthDropRate:F2}/s)";
             }
-
             else if (healthRatio <= _config.AutoPotHealthThreshold.Value)
             {
                 shouldPot = true;
@@ -183,12 +205,6 @@ namespace AutoNexus.Features
             {
                 _logger.Msg($"AutoPot: Health is low ({currentHealth}/{_monitorState.MaxHealth} = {healthRatio:P}) - {reason}. Using health potion.");
                 MelonCoroutines.Start(SimulateKeyPress());
-            }
-
-            if (currentHealth > _monitorState.MaxHealth)
-            {
-                _monitorState.MaxHealth = currentHealth;
-                _logger.Msg($"AutoPot: Max health updated to {_monitorState.MaxHealth}");
             }
         }
 

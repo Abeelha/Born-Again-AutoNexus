@@ -72,7 +72,6 @@ namespace AutoNexus.Configuration
             logger.Msg("=== AutoNexus Settings ===");
             logger.Msg($"Health Threshold: {HealthThreshold.Value * 100:F2}%");
             logger.Msg($"Init Check Interval (fixed): {ModDefaults.INIT_CHECK_INTERVAL}s");
-            logger.Msg($"Health Stability Time (fixed): {ModDefaults.HEALTH_STABILITY_TIME}s");
             logger.Msg($"Grace Period (Default, fixed): {ModDefaults.GRACE_PERIOD_DEFAULT}s");
             logger.Msg($"Disconnect Key: {DisconnectKey.Value}");
             logger.Msg("=== Camera Settings ===");

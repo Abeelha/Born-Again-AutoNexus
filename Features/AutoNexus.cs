@@ -6,6 +6,7 @@ using AutoNexus.Constants;
 using AutoNexus.Helpers;
 using Il2Cpp;
 using System.Runtime.CompilerServices;
+using Il2CppRonin.Model.Enums;
 
 namespace AutoNexus.Features
 {
@@ -15,6 +16,8 @@ namespace AutoNexus.Features
         private readonly MelonLogger.Instance _logger;
         private GameObject _playerCharacter;
         private Character _characterComponent;
+        private Entity _entityComponent;
+        private Il2CppRonin.Model.Structs.Stats _entityStats;
         private readonly HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
 
         private bool _gracePeriodActive;
@@ -76,18 +79,26 @@ namespace AutoNexus.Features
                 return false;
             }
 
+            _entityComponent = _playerCharacter.GetComponent<Il2Cpp.Entity>();
+            if (_entityComponent == null)
+            {
+                _logger.Warning("Entity component not found.");
+                return false;
+            }
+
             InitializeHealthState();
             InitializeEntityName();
             return true;
         }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void InitializeHealthState()
         {
             int currentHealth = _characterComponent.Health;
             _monitorState.LastHealthValue = currentHealth;
-            _monitorState.PreviousStableHealth = currentHealth;
-            _monitorState.MaxHealth = currentHealth;
+    
+            int statsMaxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+    
+            _monitorState.UpdateMaxHealth(statsMaxHealth, _logger);
         }
 
         private void InitializeEntityName()
@@ -124,8 +135,17 @@ namespace AutoNexus.Features
 
                 try
                 {
-                    ProcessHealthCheck();
-                    HealthMonitoringHelper.UpdateStability(_monitorState, _characterComponent.Health, deltaTime, ModDefaults.HEALTH_STABILITY_TIME, _logger);
+                    int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+                    _monitorState.UpdateMaxHealth(maxHealth, _logger);
+        
+                    int currentHealth = _characterComponent.Health;
+                    HealthMonitoringHelper.UpdateHealth(_monitorState, currentHealth, Time.realtimeSinceStartup);
+                    HealthMonitoringHelper.CheckCriticalHealth(currentHealth, _monitorState.MaxHealth, _config.HealthThreshold.Value, _logger);
+        
+                    if (HealthMonitoringHelper.ShouldTriggerNexus(_config.HealthThreshold.Value, _gracePeriodActive))
+                    {
+                        DisconnectFromWorld();
+                    }
                 }
                 catch (System.Exception ex)
                 {
@@ -203,6 +223,14 @@ namespace AutoNexus.Features
             if (_characterComponent != null)
             {
                 _logger.Msg("Player reconnected. Starting grace period...");
+
+                _entityComponent = _playerCharacter.GetComponent<Il2Cpp.Entity>();
+                if (_entityComponent != null)
+                {
+                    int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+                    _monitorState.UpdateMaxHealth(maxHealth, _logger);
+                }
+
                 StartGracePeriod(ModDefaults.GRACE_PERIOD_DEFAULT);
                 return true;
             }
@@ -210,21 +238,11 @@ namespace AutoNexus.Features
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ProcessHealthCheck()
-        {
-            int currentHealth = _characterComponent.Health;
-            HealthMonitoringHelper.CheckCriticalHealth(currentHealth, _monitorState.MaxHealth, _config.HealthThreshold.Value, _logger);
-
-            if (HealthMonitoringHelper.ShouldTriggerNexus(_config.HealthThreshold.Value, _gracePeriodActive))
-            {
-                DisconnectFromWorld();
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ProcessHealthCheck(ref int lastLoggedHealth)
         {
             int currentHealth = _characterComponent.Health;
+            int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+            _monitorState.UpdateMaxHealth(maxHealth, _logger);
 
             if (currentHealth != lastLoggedHealth)
             {
