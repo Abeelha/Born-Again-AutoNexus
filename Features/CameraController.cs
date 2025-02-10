@@ -1,24 +1,25 @@
 ﻿using AutoNexus.Configuration;
 using AutoNexus.Constants;
 using Il2Cpp;
+using Object = UnityEngine.Object;
 
 namespace AutoNexus.Features;
 
 public class CameraController
 {
+    private const float ZOOM_CHECK_THRESHOLD = 0.1f;
+    private const float CHECK_INTERVAL = 0.2f;
     private readonly ModConfig _config;
     private readonly MelonLogger.Instance _logger;
     private readonly RoofRemover _roofRemover;
-    private WorldCamera _worldCamera;
-    private Camera _mainCamera;
     private KeyCode _currentZoomInKey;
     private KeyCode _currentZoomOutKey;
-    private float _lastUsedPixelsPerUnit;
     private bool _hasInitializedZoom;
     private float _lastRemovalCheckZoom;
+    private float _lastUsedPixelsPerUnit;
+    private Camera _mainCamera;
+    private WorldCamera _worldCamera;
     private float _zoomUpdateTimer;
-    private const float ZOOM_CHECK_THRESHOLD = 0.1f;
-    private const float CHECK_INTERVAL = 0.2f;
 
     public CameraController(ModConfig config, MelonLogger.Instance logger, RoofRemover roofRemover)
     {
@@ -80,7 +81,7 @@ public class CameraController
     {
         if (_worldCamera == null) return;
 
-        float currentZoom = _worldCamera.PixelsPerUnit;
+        var currentZoom = _worldCamera.PixelsPerUnit;
         if (Mathf.Abs(currentZoom - _lastRemovalCheckZoom) >= ZOOM_CHECK_THRESHOLD)
         {
             _roofRemover.ForceRoofRemoval();
@@ -90,10 +91,10 @@ public class CameraController
 
     private void TryInitializeCamera()
     {
-        try 
+        try
         {
-            _worldCamera = UnityEngine.Object.FindObjectOfType<WorldCamera>();
-                
+            _worldCamera = Object.FindObjectOfType<WorldCamera>();
+
             if (_worldCamera != null && !_hasInitializedZoom)
             {
                 _worldCamera.PixelsPerUnit = _lastUsedPixelsPerUnit;
@@ -110,10 +111,10 @@ public class CameraController
 
     private void HandleZoomAdjustments()
     {
-        float newPixelsPerUnit = _worldCamera.PixelsPerUnit;
-        bool adjustmentMade = false;
+        var newPixelsPerUnit = _worldCamera.PixelsPerUnit;
+        var adjustmentMade = false;
 
-        float scrollDelta = Input.mouseScrollDelta.y;
+        var scrollDelta = Input.mouseScrollDelta.y;
         if (scrollDelta != 0)
         {
             if ((scrollDelta > 0 && _config.ZoomInKey.Value.ToUpper() == "MOUSESCROLLUP") ||
@@ -140,8 +141,8 @@ public class CameraController
 
         if (adjustmentMade)
         {
-            newPixelsPerUnit = Mathf.Clamp(newPixelsPerUnit, 
-                ModDefaults.Camera.MIN_PIXELS_PER_UNIT, 
+            newPixelsPerUnit = Mathf.Clamp(newPixelsPerUnit,
+                ModDefaults.Camera.MIN_PIXELS_PER_UNIT,
                 ModDefaults.Camera.MAX_PIXELS_PER_UNIT);
 
             if (Math.Abs(newPixelsPerUnit - _worldCamera.PixelsPerUnit) > 0.01f)
@@ -157,8 +158,8 @@ public class CameraController
     {
         try
         {
-            _currentZoomInKey = _config.ZoomInKey.Value.ToUpper() == "MOUSESCROLLUP" 
-                ? KeyCode.None 
+            _currentZoomInKey = _config.ZoomInKey.Value.ToUpper() == "MOUSESCROLLUP"
+                ? KeyCode.None
                 : (KeyCode)Enum.Parse(typeof(KeyCode), _config.ZoomInKey.Value, true);
 
             _currentZoomOutKey = _config.ZoomOutKey.Value.ToUpper() == "MOUSESCROLLDOWN"

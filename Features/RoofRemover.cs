@@ -1,16 +1,17 @@
-using Il2Cpp;
 using System.Collections;
+using Il2Cpp;
 using Il2CppInterop.Runtime;
+using Object = UnityEngine.Object;
 
 namespace AutoNexus.Features;
 
 public class RoofRemover
 {
     private readonly MelonLogger.Instance _logger;
-    private bool _isActive;
     private float _checkInterval = 0.5f;
-    private HashSet<int> _processedChunkIds;
+    private bool _isActive;
     private int _lastChunkCount;
+    private HashSet<int> _processedChunkIds;
 
     public RoofRemover(MelonLogger.Instance logger)
     {
@@ -43,17 +44,17 @@ public class RoofRemover
 
     private void DisableAllCeilingChunks(bool forceUpdate)
     {
-        try 
+        try
         {
-            var objects = UnityEngine.Object.FindObjectsOfType(Il2CppType.Of<TileChunk>());
-                
+            var objects = Object.FindObjectsOfType(Il2CppType.Of<TileChunk>());
+
             if (!forceUpdate && objects.Length == _lastChunkCount)
                 return;
 
             _lastChunkCount = objects.Length;
-                
+
             var ceilingChunks = objects?.Select(obj => obj.TryCast<TileChunk>())
-                .Where(chunk => chunk != null && 
+                .Where(chunk => chunk != null &&
                                 chunk.name.Contains("CeilingChunk"))
                 .ToArray();
 
@@ -61,10 +62,10 @@ public class RoofRemover
             {
                 foreach (var chunk in ceilingChunks)
                 {
-                    if (chunk == null) 
+                    if (chunk == null)
                         continue;
 
-                    int instanceId = chunk.GetInstanceID();
+                    var instanceId = chunk.GetInstanceID();
                     if (!forceUpdate && _processedChunkIds.Contains(instanceId))
                         continue;
 
@@ -77,8 +78,8 @@ public class RoofRemover
 
                     if (chunk.Size != null)
                     {
-                        int totalTiles = chunk.Size.x * chunk.Size.y;
-                        for (int i = 0; i < totalTiles; i++)
+                        var totalTiles = chunk.Size.x * chunk.Size.y;
+                        for (var i = 0; i < totalTiles; i++)
                         {
                             chunk.SetAlpha(0f, i);
                         }

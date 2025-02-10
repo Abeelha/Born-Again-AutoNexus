@@ -1,29 +1,30 @@
-﻿using AutoNexus.Configuration;
-using System.Collections;
+﻿using System.Collections;
+using System.Runtime.CompilerServices;
+using AutoNexus.Configuration;
 using AutoNexus.Constants;
 using AutoNexus.Helpers;
 using Il2Cpp;
-using System.Runtime.CompilerServices;
+using Object = UnityEngine.Object;
 
 namespace AutoNexus.Features;
 
 public class AutoNexus
 {
+    private const int MAX_WAITING_LOGS = 3;
+    private const float MIN_UPDATE_INTERVAL = 1f / 165f;
     private readonly ModConfig _config;
     private readonly MelonLogger.Instance _logger;
-    private GameObject _playerCharacter;
-    private Character _characterComponent;
     private readonly HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
+    private float _accumulatedTime;
+    private Character _characterComponent;
 
     private bool _gracePeriodActive;
     private bool _isMonitoringActive;
-    private object _monitoringCoroutine;
-    private int _waitingLogCounter;
-    private const int MAX_WAITING_LOGS = 3;
 
     private float _lastUpdateTime;
-    private float _accumulatedTime;
-    private const float MIN_UPDATE_INTERVAL = 1f / 165f;
+    private object _monitoringCoroutine;
+    private GameObject _playerCharacter;
+    private int _waitingLogCounter;
 
     public AutoNexus(ModConfig config, MelonLogger.Instance logger)
     {
@@ -56,6 +57,7 @@ public class AutoNexus
                 _logger.Msg("Waiting for player character...");
                 _waitingLogCounter++;
             }
+
             yield return waitInterval;
         }
     }
@@ -82,7 +84,7 @@ public class AutoNexus
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void InitializeHealthState()
     {
-        int currentHealth = _characterComponent.Health;
+        var currentHealth = _characterComponent.Health;
         _monitorState.LastHealthValue = currentHealth;
         _monitorState.PreviousStableHealth = currentHealth;
         _monitorState.MaxHealth = currentHealth;
@@ -109,8 +111,8 @@ public class AutoNexus
         if (!_isMonitoringActive || _characterComponent == null)
             return;
 
-        float currentTime = Time.realtimeSinceStartup;
-        float deltaTime = currentTime - _lastUpdateTime;
+        var currentTime = Time.realtimeSinceStartup;
+        var deltaTime = currentTime - _lastUpdateTime;
         _lastUpdateTime = currentTime;
 
         _accumulatedTime += deltaTime;
@@ -123,7 +125,8 @@ public class AutoNexus
             try
             {
                 ProcessHealthCheck();
-                HealthMonitoringHelper.UpdateStability(_monitorState, _characterComponent.Health, deltaTime, ModDefaults.HEALTH_STABILITY_TIME, _logger);
+                HealthMonitoringHelper.UpdateStability(_monitorState, _characterComponent.Health, deltaTime,
+                    ModDefaults.HEALTH_STABILITY_TIME, _logger);
             }
             catch (Exception ex)
             {
@@ -163,7 +166,7 @@ public class AutoNexus
     private IEnumerator MonitorPlayerHealth()
     {
         var waitInterval = new WaitForSeconds(MIN_UPDATE_INTERVAL);
-        int lastLoggedHealth = -1;
+        var lastLoggedHealth = -1;
 
         while (_isMonitoringActive)
         {
@@ -204,14 +207,16 @@ public class AutoNexus
             StartGracePeriod(ModDefaults.GRACE_PERIOD_DEFAULT);
             return true;
         }
+
         return false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ProcessHealthCheck()
     {
-        int currentHealth = _characterComponent.Health;
-        HealthMonitoringHelper.CheckCriticalHealth(currentHealth, _monitorState.MaxHealth, _config.HealthThreshold.Value, _logger);
+        var currentHealth = _characterComponent.Health;
+        HealthMonitoringHelper.CheckCriticalHealth(currentHealth, _monitorState.MaxHealth,
+            _config.HealthThreshold.Value, _logger);
 
         if (HealthMonitoringHelper.ShouldTriggerNexus(_config.HealthThreshold.Value, _gracePeriodActive))
         {
@@ -222,12 +227,13 @@ public class AutoNexus
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ProcessHealthCheck(ref int lastLoggedHealth)
     {
-        int currentHealth = _characterComponent.Health;
+        var currentHealth = _characterComponent.Health;
 
         if (currentHealth != lastLoggedHealth)
         {
             lastLoggedHealth = currentHealth;
-            HealthMonitoringHelper.CheckCriticalHealth(currentHealth, _monitorState.MaxHealth, _config.HealthThreshold.Value, _logger);
+            HealthMonitoringHelper.CheckCriticalHealth(currentHealth, _monitorState.MaxHealth,
+                _config.HealthThreshold.Value, _logger);
         }
 
         if (HealthMonitoringHelper.ShouldTriggerNexus(_config.HealthThreshold.Value, _gracePeriodActive))
@@ -241,7 +247,7 @@ public class AutoNexus
     {
         try
         {
-            var world = UnityEngine.Object.FindObjectOfType<World>();
+            var world = Object.FindObjectOfType<World>();
             if (world == null)
             {
                 _logger.Warning("World object not found.");

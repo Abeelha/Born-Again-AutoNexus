@@ -7,18 +7,18 @@ public class SoundManager
 {
     private readonly MelonLogger.Instance _logger;
 
-    [DllImport("winmm.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    private static extern bool PlaySound(string pszSound, IntPtr hmod, uint fdwSound);
-
     public SoundManager(MelonLogger.Instance logger)
     {
         _logger = logger;
         EnsureSoundDirectory();
     }
 
+    [DllImport("winmm.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool PlaySound(string pszSound, IntPtr hmod, uint fdwSound);
+
     private void EnsureSoundDirectory()
     {
-        string soundsFolder = "Mods/sounds";
+        var soundsFolder = "Mods/sounds";
         if (!Directory.Exists(soundsFolder))
         {
             Directory.CreateDirectory(soundsFolder);
@@ -28,7 +28,7 @@ public class SoundManager
 
     public void PlayAutoNexusToggleSound(bool isEnabled)
     {
-        string soundFilePath = isEnabled ? "Mods/sounds/enableNexusInsta.wav" : "Mods/sounds/disableNexusInsta.wav";
+        var soundFilePath = isEnabled ? "Mods/sounds/enableNexusInsta.wav" : "Mods/sounds/disableNexusInsta.wav";
         if (File.Exists(soundFilePath))
         {
             if (!PlaySound(soundFilePath, IntPtr.Zero, ModDefaults.Sound.SND_ASYNC | ModDefaults.Sound.SND_FILENAME))
@@ -44,7 +44,7 @@ public class SoundManager
 
     public void PlayAutoPotToggleSound(bool isEnabled)
     {
-        string soundFilePath = isEnabled ? "Mods/sounds/enableAutoPot.wav" : "Mods/sounds/disableAutoPot.wav";
+        var soundFilePath = isEnabled ? "Mods/sounds/enableAutoPot.wav" : "Mods/sounds/disableAutoPot.wav";
         if (File.Exists(soundFilePath))
         {
             if (!PlaySound(soundFilePath, IntPtr.Zero, ModDefaults.Sound.SND_ASYNC | ModDefaults.Sound.SND_FILENAME))

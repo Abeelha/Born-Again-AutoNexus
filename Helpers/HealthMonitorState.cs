@@ -4,22 +4,11 @@ namespace AutoNexus.Helpers;
 
 public class HealthMonitorState
 {
+    private const int HISTORY_SIZE = 30;
 
     private readonly float[] _healthHistory;
     private readonly float[] _timeHistory;
     private int _historyIndex;
-    private const int HISTORY_SIZE = 30;
-        
-    public int LastHealthValue { get; set; } = -1;
-    public float HealthStableTimer { get; set; }
-    public bool IsTrackingHealth { get; set; }
-    public int PreviousStableHealth { get; set; } = -1;
-    public int MaxHealth { get; set; } = -1;
-        
-
-    public float LastHealthCheckTime { get; private set; }
-    public float HealthDropRate { get; private set; }
-    public bool IsHealthCritical { get; internal set; }
 
     public HealthMonitorState()
     {
@@ -28,13 +17,24 @@ public class HealthMonitorState
         LastHealthCheckTime = Time.realtimeSinceStartup;
     }
 
+    public int LastHealthValue { get; set; } = -1;
+    public float HealthStableTimer { get; set; }
+    public bool IsTrackingHealth { get; set; }
+    public int PreviousStableHealth { get; set; } = -1;
+    public int MaxHealth { get; set; } = -1;
+
+
+    public float LastHealthCheckTime { get; private set; }
+    public float HealthDropRate { get; private set; }
+    public bool IsHealthCritical { get; internal set; }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddHealthReading(float health, float time)
     {
         _healthHistory[_historyIndex] = health;
         _timeHistory[_historyIndex] = time;
         _historyIndex = (_historyIndex + 1) % HISTORY_SIZE;
-            
+
 
         CalculateHealthDropRate();
     }
@@ -43,13 +43,13 @@ public class HealthMonitorState
     {
         if (_historyIndex < 2) return;
 
-        int prevIndex = (_historyIndex - 1 + HISTORY_SIZE) % HISTORY_SIZE;
-        int oldestIndex = (_historyIndex - HISTORY_SIZE + 1 + HISTORY_SIZE) % HISTORY_SIZE;
+        var prevIndex = (_historyIndex - 1 + HISTORY_SIZE) % HISTORY_SIZE;
+        var oldestIndex = (_historyIndex - HISTORY_SIZE + 1 + HISTORY_SIZE) % HISTORY_SIZE;
 
-        float timeDelta = _timeHistory[prevIndex] - _timeHistory[oldestIndex];
+        var timeDelta = _timeHistory[prevIndex] - _timeHistory[oldestIndex];
         if (timeDelta > float.Epsilon)
         {
-            float healthDelta = _healthHistory[prevIndex] - _healthHistory[oldestIndex];
+            var healthDelta = _healthHistory[prevIndex] - _healthHistory[oldestIndex];
             HealthDropRate = healthDelta / timeDelta;
         }
     }
@@ -57,13 +57,14 @@ public class HealthMonitorState
 
 public static class HealthMonitoringHelper
 {
-    public static readonly HealthMonitorState SharedState = new HealthMonitorState();
+    public static readonly HealthMonitorState SharedState = new();
     private static readonly float[] _healthChangeThresholds = { 0.05f, 0.1f, 0.15f };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void UpdateStability(HealthMonitorState state, int currentHealth, float deltaTime, float stabilityTime, MelonLogger.Instance logger)
+    public static void UpdateStability(HealthMonitorState state, int currentHealth, float deltaTime,
+        float stabilityTime, MelonLogger.Instance logger)
     {
-        float currentTime = Time.realtimeSinceStartup;
+        var currentTime = Time.realtimeSinceStartup;
 
 
         if (state.LastHealthValue == -1)
@@ -80,7 +81,7 @@ public static class HealthMonitoringHelper
 
 
         state.AddHealthReading(currentHealth, currentTime);
-            
+
 
         UpdateStabilityTimer(state, currentHealth, deltaTime, stabilityTime, logger);
     }
@@ -89,8 +90,8 @@ public static class HealthMonitoringHelper
     private static bool HasSignificantHealthChange(int lastHealth, int currentHealth)
     {
         if (lastHealth <= 0) return true;
-            
-        float changePercent = Math.Abs(currentHealth - lastHealth) / (float)lastHealth;
+
+        var changePercent = Math.Abs(currentHealth - lastHealth) / (float)lastHealth;
         return changePercent >= _healthChangeThresholds[0];
     }
 
@@ -104,7 +105,8 @@ public static class HealthMonitoringHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ProcessHealthChange(HealthMonitorState state, int currentHealth, float currentTime, float stabilityTime, MelonLogger.Instance logger)
+    private static void ProcessHealthChange(HealthMonitorState state, int currentHealth, float currentTime,
+        float stabilityTime, MelonLogger.Instance logger)
     {
         state.LastHealthValue = currentHealth;
         state.HealthStableTimer = 0f;
@@ -119,7 +121,8 @@ public static class HealthMonitoringHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void UpdateStabilityTimer(HealthMonitorState state, int currentHealth, float deltaTime, float stabilityTime, MelonLogger.Instance logger)
+    private static void UpdateStabilityTimer(HealthMonitorState state, int currentHealth, float deltaTime,
+        float stabilityTime, MelonLogger.Instance logger)
     {
         if (!state.IsTrackingHealth) return;
 
@@ -136,13 +139,14 @@ public static class HealthMonitoringHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void CheckCriticalHealth(int currentHealth, int maxHealth, float threshold, MelonLogger.Instance logger)
+    public static void CheckCriticalHealth(int currentHealth, int maxHealth, float threshold,
+        MelonLogger.Instance logger)
     {
         if (maxHealth <= 0) return;
-            
-        float healthRatio = currentHealth / (float)maxHealth;
-        bool isCritical = healthRatio <= threshold;
-            
+
+        var healthRatio = currentHealth / (float)maxHealth;
+        var isCritical = healthRatio <= threshold;
+
         if (isCritical)
         {
             logger.Warning($"Critical health: {currentHealth}/{maxHealth} ({healthRatio:P2})");
@@ -157,9 +161,11 @@ public static class HealthMonitoringHelper
         if (gracePeriodActive || SharedState.MaxHealth <= 0) return false;
 
 
-        bool isHealthCritical = SharedState.IsHealthCritical;
-        bool isDroppingFast = SharedState.HealthDropRate < -0.2f;
+        var isHealthCritical = SharedState.IsHealthCritical;
+        var isDroppingFast = SharedState.HealthDropRate < -0.2f;
 
-        return isHealthCritical || (isDroppingFast && SharedState.LastHealthValue / (float)SharedState.MaxHealth <= healthThreshold * 1.5f);
+        return isHealthCritical || (isDroppingFast &&
+                                    SharedState.LastHealthValue / (float)SharedState.MaxHealth <=
+                                    healthThreshold * 1.5f);
     }
 }

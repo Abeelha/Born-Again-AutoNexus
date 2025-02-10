@@ -1,4 +1,5 @@
 ﻿using AutoNexus.Configuration;
+using Il2Cpp;
 
 namespace AutoNexus.Features;
 
@@ -20,7 +21,7 @@ public class NameChanger
 
     public void Update()
     {
-        GameObject currentPlayerObject = GameObject.Find(_playerObjectName);
+        var currentPlayerObject = GameObject.Find(_playerObjectName);
 
         if (currentPlayerObject == null)
             return;
@@ -34,16 +35,17 @@ public class NameChanger
 
     private void ApplyCustomName(GameObject playerObject)
     {
-        var entity = playerObject.GetComponent<Il2Cpp.Entity>();
+        var entity = playerObject.GetComponent<Entity>();
         if (entity != null)
         {
-            string playerName = _config.PlayerName.Value;
+            var playerName = _config.PlayerName.Value;
             _logger.Msg($"[NameChanger] Setting entity name and GUI name to: {playerName}");
 
             entity.SetEntityName(playerName);
             entity.SetEntityGuiName(playerName);
 
-            _logger.Msg($"[NameChanger] Player object '{_playerObjectName}' initialized with custom name: {playerName}");
+            _logger.Msg(
+                $"[NameChanger] Player object '{_playerObjectName}' initialized with custom name: {playerName}");
         }
         else
         {

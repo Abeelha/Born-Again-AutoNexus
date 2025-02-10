@@ -1,6 +1,8 @@
 ﻿using AutoNexus.Configuration;
 using AutoNexus.Constants;
 using AutoNexus.Utils;
+using Il2Cpp;
+using Object = UnityEngine.Object;
 
 namespace AutoNexus.Features;
 
@@ -48,13 +50,15 @@ public class KeyboardController
         if (Input.GetKeyDown(_currentToggleChatKey))
         {
             _isChatMode = !_isChatMode;
-            _logger.Msg($"Chat mode {(_isChatMode ? "enabled" : "disabled")}. Disconnect functionality is now {(!_isChatMode ? "active" : "inactive")}.");
+            _logger.Msg(
+                $"Chat mode {(_isChatMode ? "enabled" : "disabled")}. Disconnect functionality is now {(!_isChatMode ? "active" : "inactive")}.");
         }
     }
 
     private void HandleLockKey()
     {
-        if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) && Input.GetKeyDown(_currentDisconnectKey))
+        if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
+            Input.GetKeyDown(_currentDisconnectKey))
         {
             _isDisconnectEnabled = !_isDisconnectEnabled;
             _logger.Msg($"Disconnect functionality is now {(_isDisconnectEnabled ? "enabled" : "disabled")}.");
@@ -70,7 +74,7 @@ public class KeyboardController
 
     private void UpdateDisconnectKey()
     {
-        string keyString = _config.DisconnectKey.Value.ToUpper();
+        var keyString = _config.DisconnectKey.Value.ToUpper();
         if (keyString == "ENTER") keyString = "RETURN";
 
         try
@@ -87,7 +91,7 @@ public class KeyboardController
 
     private void UpdateToggleChatKey()
     {
-        string keyString = ModDefaults.TOGGLE_CHAT_KEY.ToUpper();
+        var keyString = ModDefaults.TOGGLE_CHAT_KEY.ToUpper();
         if (keyString == "ENTER") keyString = "RETURN";
 
         try
@@ -105,7 +109,7 @@ public class KeyboardController
     {
         try
         {
-            var world = UnityEngine.Object.FindObjectOfType<Il2Cpp.World>();
+            var world = Object.FindObjectOfType<World>();
             if (world == null)
             {
                 _logger.Warning("World object not found.");

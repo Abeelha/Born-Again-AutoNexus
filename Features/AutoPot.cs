@@ -1,32 +1,31 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Il2Cpp;
 using AutoNexus.Configuration;
 using AutoNexus.Constants;
 using AutoNexus.Helpers;
 using AutoNexus.Utils;
-using System.Runtime.CompilerServices;
+using Il2Cpp;
 
 namespace AutoNexus.Features;
 
 public class AutoPot
 {
-    private readonly MelonLogger.Instance _logger;
-    private readonly ModConfig _config;
-    private readonly SoundManager _soundManager;
-    private GameObject _playerCharacter;
-    private Character _characterComponent;
-    private HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
-    private bool _isSimulatingKeyPress;
-    private byte _autoPotKey;
-    private bool _gracePeriodActive;
-    private bool _autoPotEnabled = true;
-    private KeyCode _currentAutoPotToggleKey;
-
     private const float MIN_UPDATE_INTERVAL = 1f / 165f;
     private const float AUTO_POT_DELAY = 0.5f;
     private const float RAPID_HEALTH_DROP_THRESHOLD = -50f;
     private const float EMERGENCY_HEALTH_RATIO = 0.3f;
+    private readonly ModConfig _config;
+    private readonly MelonLogger.Instance _logger;
+    private readonly SoundManager _soundManager;
+    private bool _autoPotEnabled = true;
+    private byte _autoPotKey;
+    private Character _characterComponent;
+    private KeyCode _currentAutoPotToggleKey;
+    private bool _gracePeriodActive;
+    private bool _isSimulatingKeyPress;
+    private HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
+    private GameObject _playerCharacter;
 
     public AutoPot(MelonLogger.Instance logger, ModConfig config, SoundManager soundManager)
     {
@@ -41,23 +40,25 @@ public class AutoPot
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ParseAutoPotKey()
     {
-        string keyString = _config.AutoPotKey.Value.Trim();
+        var keyString = _config.AutoPotKey.Value.Trim();
         if (keyString.Length == 1)
         {
-            char ch = keyString[0];
+            var ch = keyString[0];
             if (char.IsDigit(ch))
                 keyString = "Alpha" + ch;
             else if (char.IsLetter(ch))
                 keyString = char.ToUpper(ch).ToString();
         }
+
         try
         {
-            KeyCode keyCode = (KeyCode)Enum.Parse(typeof(KeyCode), keyString, true);
+            var keyCode = (KeyCode)Enum.Parse(typeof(KeyCode), keyString, true);
             _autoPotKey = (byte)keyCode;
         }
         catch (Exception ex)
         {
-            _logger.Error($"Invalid AutoPotKey '{_config.AutoPotKey.Value}'. Reverting to default '1'. Exception: {ex.Message}");
+            _logger.Error(
+                $"Invalid AutoPotKey '{_config.AutoPotKey.Value}'. Reverting to default '1'. Exception: {ex.Message}");
             _autoPotKey = (byte)KeyCode.Alpha1;
             _config.AutoPotKey.Value = "1";
         }
@@ -66,7 +67,7 @@ public class AutoPot
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void UpdateAutoPotToggleKey()
     {
-        string keyString = _config.AutoPotToggleKey.Value.ToUpper();
+        var keyString = _config.AutoPotToggleKey.Value.ToUpper();
         if (keyString == "ENTER") keyString = "RETURN";
 
         try
@@ -75,7 +76,8 @@ public class AutoPot
         }
         catch (ArgumentException)
         {
-            _logger.Error($"Invalid AutoPotToggleKey '{_config.AutoPotToggleKey.Value}' in config. Reverting to default 'H'.");
+            _logger.Error(
+                $"Invalid AutoPotToggleKey '{_config.AutoPotToggleKey.Value}' in config. Reverting to default 'H'.");
             _currentAutoPotToggleKey = KeyCode.H;
             _config.AutoPotToggleKey.Value = "H";
         }
@@ -97,6 +99,7 @@ public class AutoPot
                 _logger.Msg("AutoPot: Player initialized successfully.");
                 yield break;
             }
+
             yield return waitInterval;
         }
     }
@@ -115,7 +118,7 @@ public class AutoPot
             return false;
         }
 
-        int currentHealth = _characterComponent.Health;
+        var currentHealth = _characterComponent.Health;
         _monitorState.LastHealthValue = currentHealth;
         _monitorState.PreviousStableHealth = currentHealth;
         _monitorState.MaxHealth = currentHealth;
@@ -141,7 +144,8 @@ public class AutoPot
         if (!ValidatePlayerState())
             return;
 
-        HealthMonitoringHelper.UpdateStability(_monitorState, _characterComponent.Health, MIN_UPDATE_INTERVAL, ModDefaults.HEALTH_STABILITY_TIME, _logger);
+        HealthMonitoringHelper.UpdateStability(_monitorState, _characterComponent.Health, MIN_UPDATE_INTERVAL,
+            ModDefaults.HEALTH_STABILITY_TIME, _logger);
         ProcessHealthCheck();
     }
 
@@ -162,17 +166,18 @@ public class AutoPot
             StartGracePeriod(ModDefaults.GRACE_PERIOD_DEFAULT);
             return false;
         }
+
         return false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ProcessHealthCheck()
     {
-        int currentHealth = _characterComponent.Health;
-        float healthRatio = _monitorState.MaxHealth > 0 ? (float)currentHealth / _monitorState.MaxHealth : 1f;
+        var currentHealth = _characterComponent.Health;
+        var healthRatio = _monitorState.MaxHealth > 0 ? (float)currentHealth / _monitorState.MaxHealth : 1f;
 
-        bool shouldPot = false;
-        string reason = "";
+        var shouldPot = false;
+        var reason = "";
 
 
         if (_monitorState.HealthDropRate < RAPID_HEALTH_DROP_THRESHOLD && healthRatio < EMERGENCY_HEALTH_RATIO)
@@ -189,7 +194,8 @@ public class AutoPot
 
         if (!_gracePeriodActive && shouldPot && !_isSimulatingKeyPress)
         {
-            _logger.Msg($"AutoPot: Health is low ({currentHealth}/{_monitorState.MaxHealth} = {healthRatio:P}) - {reason}. Using health potion.");
+            _logger.Msg(
+                $"AutoPot: Health is low ({currentHealth}/{_monitorState.MaxHealth} = {healthRatio:P}) - {reason}. Using health potion.");
             MelonCoroutines.Start(SimulateKeyPress());
         }
 
@@ -203,7 +209,7 @@ public class AutoPot
     private IEnumerator SimulateKeyPress()
     {
         _isSimulatingKeyPress = true;
-            
+
         KeyDown(_autoPotKey);
         yield return new WaitForSeconds(0.1f);
         KeyUp(_autoPotKey);
@@ -228,6 +234,7 @@ public class AutoPot
     }
 
     #region keybd_event Interop
+
     [DllImport("user32.dll", SetLastError = true)]
     private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
@@ -245,5 +252,6 @@ public class AutoPot
     {
         keybd_event(vk, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
     }
+
     #endregion
 }

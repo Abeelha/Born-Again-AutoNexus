@@ -1,44 +1,13 @@
+using System.Collections;
 using AutoNexus.Configuration;
 using Il2CppInterop.Runtime;
 using UnityEngine.Events;
 using UnityEngine.UI;
-using System.Collections;
 
 namespace AutoNexus.UI;
 
 public class ConfigDisplay
 {
-    private readonly ModConfig _config;
-    private readonly MelonLogger.Instance _logger;
-    private GameObject _configPanel;
-    private bool _isVisible = true;
-
-    private TMP_InputField _healthThresholdInput;
-    private TMP_InputField _autoPotThresholdInput;
-    private TMP_InputField _autoPotKeyInput;
-    private TMP_InputField _autoPotToggleInput;
-    private TMP_InputField _disconnectKeyInput;
-
-
-    private TextMeshProUGUI _healthValueText;
-    private TextMeshProUGUI _autoPotValueText;
-    private TextMeshProUGUI _potKeyValueText;
-    private TextMeshProUGUI _toggleValueText;
-    private TextMeshProUGUI _nexusValueText;
-    private Image _saveButtonImage;
-    private TextMeshProUGUI _saveButtonText;
-
-
-    private readonly Color PANEL_COLOR = new Color(0.08f, 0.04f, 0.16f, 0.95f);
-    private readonly Color LABEL_COLOR = new Color(0.95f, 0.4f, 0.95f, 1f);
-    private readonly Color VALUE_COLOR = new Color(0.4f, 0.95f, 0.95f, 1f);
-    private readonly Color INPUT_BG_COLOR = new Color(0.12f, 0.08f, 0.2f, 1f);
-    private readonly Color BUTTON_COLOR = new Color(0.95f, 0.2f, 0.6f, 1f);
-    private readonly Color DIVIDER_COLOR = new Color(0.95f, 0.4f, 0.95f, 0.2f);
-    private readonly Color SUCCESS_COLOR = new Color(0.2f, 0.95f, 0.4f, 1f);
-    private readonly Color ERROR_COLOR = new Color(0.95f, 0.2f, 0.2f, 1f);
-
-
     private const float PANEL_WIDTH = 200f;
     private const float PANEL_HEIGHT = 220f;
     private const float ROW_HEIGHT = 25f;
@@ -47,6 +16,35 @@ public class ConfigDisplay
     private const float SAVE_BUTTON_HEIGHT = 24f;
     private const float SAVE_BUTTON_WIDTH = 80f;
     private const float DIVIDER_MARGIN = 2f;
+    private readonly ModConfig _config;
+    private readonly MelonLogger.Instance _logger;
+    private readonly Color BUTTON_COLOR = new(0.95f, 0.2f, 0.6f, 1f);
+    private readonly Color DIVIDER_COLOR = new(0.95f, 0.4f, 0.95f, 0.2f);
+    private readonly Color ERROR_COLOR = new(0.95f, 0.2f, 0.2f, 1f);
+    private readonly Color INPUT_BG_COLOR = new(0.12f, 0.08f, 0.2f, 1f);
+    private readonly Color LABEL_COLOR = new(0.95f, 0.4f, 0.95f, 1f);
+
+
+    private readonly Color PANEL_COLOR = new(0.08f, 0.04f, 0.16f, 0.95f);
+    private readonly Color SUCCESS_COLOR = new(0.2f, 0.95f, 0.4f, 1f);
+    private readonly Color VALUE_COLOR = new(0.4f, 0.95f, 0.95f, 1f);
+    private TMP_InputField _autoPotKeyInput;
+    private TMP_InputField _autoPotThresholdInput;
+    private TMP_InputField _autoPotToggleInput;
+    private TextMeshProUGUI _autoPotValueText;
+    private GameObject _configPanel;
+    private TMP_InputField _disconnectKeyInput;
+
+    private TMP_InputField _healthThresholdInput;
+
+
+    private TextMeshProUGUI _healthValueText;
+    private bool _isVisible = true;
+    private TextMeshProUGUI _nexusValueText;
+    private TextMeshProUGUI _potKeyValueText;
+    private Image _saveButtonImage;
+    private TextMeshProUGUI _saveButtonText;
+    private TextMeshProUGUI _toggleValueText;
 
     public ConfigDisplay(ModConfig config, MelonLogger.Instance logger)
     {
@@ -75,12 +73,12 @@ public class ConfigDisplay
         _configPanel.transform.SetParent(canvas.transform, false);
 
 
-        Canvas panelCanvas = _configPanel.AddComponent<Canvas>();
+        var panelCanvas = _configPanel.AddComponent<Canvas>();
         panelCanvas.overrideSorting = true;
         panelCanvas.sortingOrder = 100;
 
 
-        CanvasScaler scaler = _configPanel.AddComponent<CanvasScaler>();
+        var scaler = _configPanel.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
@@ -89,7 +87,7 @@ public class ConfigDisplay
 
         _configPanel.AddComponent<GraphicRaycaster>();
 
-        RectTransform panelRect = _configPanel.GetComponent<RectTransform>();
+        var panelRect = _configPanel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(1, 1);
         panelRect.anchorMax = new Vector2(1, 1);
         panelRect.pivot = new Vector2(1, 1);
@@ -103,7 +101,7 @@ public class ConfigDisplay
 
     private void CreateHeader()
     {
-        GameObject headerObj = new GameObject("Header");
+        var headerObj = new GameObject("Header");
         headerObj.transform.SetParent(_configPanel.transform, false);
 
         var headerText = headerObj.AddComponent<TextMeshProUGUI>();
@@ -113,7 +111,7 @@ public class ConfigDisplay
         headerText.alignment = TextAlignmentOptions.Center;
         headerText.fontStyle = FontStyles.Bold;
 
-        RectTransform headerRect = headerText.rectTransform;
+        var headerRect = headerText.rectTransform;
         headerRect.anchorMin = new Vector2(0, 1);
         headerRect.anchorMax = new Vector2(1, 1);
         headerRect.pivot = new Vector2(0.5f, 1);
@@ -125,13 +123,13 @@ public class ConfigDisplay
 
     private void CreateDivider(float yPosition)
     {
-        GameObject divider = new GameObject("Divider");
+        var divider = new GameObject("Divider");
         divider.transform.SetParent(_configPanel.transform, false);
 
         var dividerImage = divider.AddComponent<Image>();
         dividerImage.color = DIVIDER_COLOR;
 
-        RectTransform dividerRect = divider.GetComponent<RectTransform>();
+        var dividerRect = divider.GetComponent<RectTransform>();
         dividerRect.anchorMin = new Vector2(0.05f, 1);
         dividerRect.anchorMax = new Vector2(0.95f, 1);
         dividerRect.pivot = new Vector2(0.5f, 1);
@@ -141,14 +139,16 @@ public class ConfigDisplay
 
     private void CreateConfigDisplay()
     {
-        float yOffset = -(HEADER_HEIGHT + 10);
-        float totalRowHeight = ROW_HEIGHT + ROW_PADDING;
+        var yOffset = -(HEADER_HEIGHT + 10);
+        var totalRowHeight = ROW_HEIGHT + ROW_PADDING;
 
-        CreateConfigRow("Health", _config.HealthThreshold.Value * 100 + "%", ref _healthThresholdInput, ref _healthValueText, yOffset);
+        CreateConfigRow("Health", _config.HealthThreshold.Value * 100 + "%", ref _healthThresholdInput,
+            ref _healthValueText, yOffset);
         yOffset -= totalRowHeight;
         CreateDivider(yOffset + DIVIDER_MARGIN);
 
-        CreateConfigRow("AutoPot", _config.AutoPotHealthThreshold.Value * 100 + "%", ref _autoPotThresholdInput, ref _autoPotValueText, yOffset);
+        CreateConfigRow("AutoPot", _config.AutoPotHealthThreshold.Value * 100 + "%", ref _autoPotThresholdInput,
+            ref _autoPotValueText, yOffset);
         yOffset -= totalRowHeight;
         CreateDivider(yOffset + DIVIDER_MARGIN);
 
@@ -156,7 +156,8 @@ public class ConfigDisplay
         yOffset -= totalRowHeight;
         CreateDivider(yOffset + DIVIDER_MARGIN);
 
-        CreateConfigRow("Toggle", _config.AutoPotToggleKey.Value, ref _autoPotToggleInput, ref _toggleValueText, yOffset);
+        CreateConfigRow("Toggle", _config.AutoPotToggleKey.Value, ref _autoPotToggleInput, ref _toggleValueText,
+            yOffset);
         yOffset -= totalRowHeight;
         CreateDivider(yOffset + DIVIDER_MARGIN);
 
@@ -165,12 +166,13 @@ public class ConfigDisplay
         CreateDivider(yOffset + DIVIDER_MARGIN);
     }
 
-    private void CreateConfigRow(string label, string currentValue, ref TMP_InputField inputField, ref TextMeshProUGUI valueText, float yOffset)
+    private void CreateConfigRow(string label, string currentValue, ref TMP_InputField inputField,
+        ref TextMeshProUGUI valueText, float yOffset)
     {
-        GameObject row = new GameObject($"Row_{label}");
+        var row = new GameObject($"Row_{label}");
         row.transform.SetParent(_configPanel.transform, false);
 
-        RectTransform rowRect = row.AddComponent<RectTransform>();
+        var rowRect = row.AddComponent<RectTransform>();
         rowRect.anchorMin = new Vector2(0, 1);
         rowRect.anchorMax = new Vector2(1, 1);
         rowRect.pivot = new Vector2(0.5f, 1);
@@ -178,7 +180,7 @@ public class ConfigDisplay
         rowRect.sizeDelta = new Vector2(-20, ROW_HEIGHT);
 
 
-        GameObject labelObj = new GameObject("Label");
+        var labelObj = new GameObject("Label");
         labelObj.transform.SetParent(row.transform, false);
         var labelText = labelObj.AddComponent<TextMeshProUGUI>();
         labelText.text = label + ":";
@@ -186,7 +188,7 @@ public class ConfigDisplay
         labelText.color = LABEL_COLOR;
         labelText.alignment = TextAlignmentOptions.Left;
 
-        RectTransform labelRect = labelText.rectTransform;
+        var labelRect = labelText.rectTransform;
         labelRect.anchorMin = new Vector2(0, 0);
         labelRect.anchorMax = new Vector2(0.3f, 1);
         labelRect.pivot = new Vector2(0, 0.5f);
@@ -194,7 +196,7 @@ public class ConfigDisplay
         labelRect.sizeDelta = Vector2.zero;
 
 
-        GameObject valueObj = new GameObject("Value");
+        var valueObj = new GameObject("Value");
         valueObj.transform.SetParent(row.transform, false);
         valueText = valueObj.AddComponent<TextMeshProUGUI>();
         valueText.text = currentValue;
@@ -202,7 +204,7 @@ public class ConfigDisplay
         valueText.color = VALUE_COLOR;
         valueText.alignment = TextAlignmentOptions.Left;
 
-        RectTransform valueRect = valueText.rectTransform;
+        var valueRect = valueText.rectTransform;
         valueRect.anchorMin = new Vector2(0.3f, 0);
         valueRect.anchorMax = new Vector2(0.6f, 1);
         valueRect.pivot = new Vector2(0, 0.5f);
@@ -214,22 +216,22 @@ public class ConfigDisplay
 
     private void CreateInputField(Transform parent, ref TMP_InputField inputField, float minX, float maxX)
     {
-        GameObject inputObj = new GameObject("InputField");
+        var inputObj = new GameObject("InputField");
         inputObj.transform.SetParent(parent, false);
 
         var bgImage = inputObj.AddComponent<Image>();
         bgImage.color = INPUT_BG_COLOR;
 
         inputField = inputObj.AddComponent<TMP_InputField>();
-            
-        GameObject textObj = new GameObject("Text");
+
+        var textObj = new GameObject("Text");
         textObj.transform.SetParent(inputObj.transform, false);
         var inputText = textObj.AddComponent<TextMeshProUGUI>();
         inputText.fontSize = 12;
         inputText.color = VALUE_COLOR;
         inputText.alignment = TextAlignmentOptions.Left;
 
-        RectTransform textRect = inputText.rectTransform;
+        var textRect = inputText.rectTransform;
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;
         textRect.sizeDelta = new Vector2(-10, -4);
@@ -239,7 +241,7 @@ public class ConfigDisplay
         inputField.targetGraphic = bgImage;
         inputField.textViewport = inputObj.GetComponent<RectTransform>();
 
-        RectTransform inputRect = inputField.GetComponent<RectTransform>();
+        var inputRect = inputField.GetComponent<RectTransform>();
         inputRect.anchorMin = new Vector2(minX, 0);
         inputRect.anchorMax = new Vector2(maxX, 1);
         inputRect.pivot = new Vector2(0, 0.5f);
@@ -249,29 +251,29 @@ public class ConfigDisplay
 
     private void CreateSaveButton()
     {
-        GameObject buttonObj = new GameObject("SaveButton");
+        var buttonObj = new GameObject("SaveButton");
         buttonObj.transform.SetParent(_configPanel.transform, false);
-            
-        Button button = buttonObj.AddComponent<Button>();
+
+        var button = buttonObj.AddComponent<Button>();
         _saveButtonImage = buttonObj.AddComponent<Image>();
         _saveButtonImage.color = BUTTON_COLOR;
-            
-        GameObject textObj = new GameObject("Text");
+
+        var textObj = new GameObject("Text");
         textObj.transform.SetParent(buttonObj.transform, false);
         _saveButtonText = textObj.AddComponent<TextMeshProUGUI>();
         _saveButtonText.text = "Save";
         _saveButtonText.fontSize = 14;
         _saveButtonText.color = Color.white;
         _saveButtonText.alignment = TextAlignmentOptions.Center;
-            
-        RectTransform buttonRect = button.GetComponent<RectTransform>();
+
+        var buttonRect = button.GetComponent<RectTransform>();
         buttonRect.anchorMin = new Vector2(0.5f, 0);
         buttonRect.anchorMax = new Vector2(0.5f, 0);
         buttonRect.pivot = new Vector2(0.5f, 0);
         buttonRect.sizeDelta = new Vector2(SAVE_BUTTON_WIDTH, SAVE_BUTTON_HEIGHT);
         buttonRect.anchoredPosition = new Vector2(0, 15);
-            
-        RectTransform textRect = _saveButtonText.rectTransform;
+
+        var textRect = _saveButtonText.rectTransform;
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;
         textRect.sizeDelta = Vector2.zero;
@@ -283,12 +285,12 @@ public class ConfigDisplay
     {
         try
         {
-            bool anyChanges = false;
+            var anyChanges = false;
 
-            if (!string.IsNullOrEmpty(_healthThresholdInput.text) && 
-                float.TryParse(_healthThresholdInput.text, out float healthThreshold))
+            if (!string.IsNullOrEmpty(_healthThresholdInput.text) &&
+                float.TryParse(_healthThresholdInput.text, out var healthThreshold))
             {
-                float normalizedHealth = healthThreshold / 100f;
+                var normalizedHealth = healthThreshold / 100f;
                 if (normalizedHealth >= 0.1f && normalizedHealth <= 0.9f)
                 {
                     _config.HealthThreshold.Value = normalizedHealth;
@@ -297,9 +299,9 @@ public class ConfigDisplay
             }
 
             if (!string.IsNullOrEmpty(_autoPotThresholdInput.text) &&
-                float.TryParse(_autoPotThresholdInput.text, out float autoPotThreshold))
+                float.TryParse(_autoPotThresholdInput.text, out var autoPotThreshold))
             {
-                float normalizedAutoPot = autoPotThreshold / 100f;
+                var normalizedAutoPot = autoPotThreshold / 100f;
                 if (normalizedAutoPot >= 0.1f && normalizedAutoPot <= 0.9f)
                 {
                     _config.AutoPotHealthThreshold.Value = normalizedAutoPot;
@@ -337,7 +339,8 @@ public class ConfigDisplay
             else
             {
                 ShowSaveWarning();
-            }}
+            }
+        }
         catch (Exception e)
         {
             _logger.Error($"Error saving settings: {e.Message}");
@@ -378,7 +381,7 @@ public class ConfigDisplay
     private IEnumerator ResetSaveButton()
     {
         yield return new WaitForSeconds(1.5f);
-            
+
         if (_saveButtonImage != null && _saveButtonText != null)
         {
             _saveButtonImage.color = BUTTON_COLOR;
@@ -390,16 +393,16 @@ public class ConfigDisplay
     {
         if (_healthValueText != null)
             _healthValueText.text = (_config.HealthThreshold.Value * 100).ToString("F1") + "%";
-            
+
         if (_autoPotValueText != null)
             _autoPotValueText.text = (_config.AutoPotHealthThreshold.Value * 100).ToString("F1") + "%";
-            
+
         if (_potKeyValueText != null)
             _potKeyValueText.text = _config.AutoPotKey.Value;
-            
+
         if (_toggleValueText != null)
             _toggleValueText.text = _config.AutoPotToggleKey.Value;
-            
+
         if (_nexusValueText != null)
             _nexusValueText.text = _config.DisconnectKey.Value;
     }
