@@ -189,6 +189,12 @@ namespace AutoNexus.Features
 
             bool shouldPot = false;
             string reason = "";
+            
+            if (_monitorState.IsBurstDamageDetected && healthRatio < EMERGENCY_HEALTH_RATIO * 1.5f)
+            {
+                shouldPot = true;
+                reason = "burst damage detected";
+            }
 
             if (_monitorState.HealthDropRate < RAPID_HEALTH_DROP_THRESHOLD && healthRatio < EMERGENCY_HEALTH_RATIO)
             {
@@ -211,12 +217,18 @@ namespace AutoNexus.Features
         private IEnumerator SimulateKeyPress()
         {
             _isSimulatingKeyPress = true;
-            
+            int healthBefore = _characterComponent.Health;
+            float timeBefore = Time.realtimeSinceStartup;
+    
             KeyDown(_autoPotKey);
             yield return new WaitForSeconds(0.1f);
             KeyUp(_autoPotKey);
 
             yield return new WaitForSeconds(AUTO_POT_DELAY);
+    
+            int healthAfter = _characterComponent.Health;
+            _monitorState.RecordPotionUse(healthBefore, healthAfter, timeBefore);
+    
             _logger.Msg("AutoPot: Health potion key press simulation complete.");
             _isSimulatingKeyPress = false;
         }
