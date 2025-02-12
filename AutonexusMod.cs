@@ -33,7 +33,7 @@ namespace AutoNexus
             nameChanger = new NameChanger(config, LoggerInstance, "Character(Clone)");
             antiAFK = new AntiAFK(LoggerInstance);
             autoPot = new AutoPot(LoggerInstance, config, soundManager);
-            configDisplay = new ConfigDisplay(config, LoggerInstance);
+            configDisplay = new ConfigDisplay(config, LoggerInstance, nameChanger);
 
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
         }

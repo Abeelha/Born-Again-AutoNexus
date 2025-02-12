@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using AutoNexus.Configuration;
+using Il2Cpp;
 using MelonLoader;
-using AutoNexus.Configuration;
+using UnityEngine;
 
 namespace AutoNexus.Features
 {
@@ -34,9 +35,25 @@ namespace AutoNexus.Features
             }
         }
 
+        public void ForceNameUpdate()
+        {
+            if (_cachedPlayerObject != null)
+            {
+                ApplyCustomName(_cachedPlayerObject);
+            }
+            else
+            {
+                GameObject currentPlayerObject = GameObject.Find(_playerObjectName);
+                if (currentPlayerObject != null)
+                {
+                    ApplyCustomName(currentPlayerObject);
+                }
+            }
+        }
+
         private void ApplyCustomName(GameObject playerObject)
         {
-            var entity = playerObject.GetComponent<Il2Cpp.Entity>();
+            var entity = playerObject.GetComponent<Entity>();
             if (entity != null)
             {
                 string playerName = _config.PlayerName.Value;
@@ -45,7 +62,8 @@ namespace AutoNexus.Features
                 entity.SetEntityName(playerName);
                 entity.SetEntityGuiName(playerName);
 
-                _logger.Msg($"[NameChanger] Player object '{_playerObjectName}' initialized with custom name: {playerName}");
+                _logger.Msg(
+                    $"[NameChanger] Player object '{_playerObjectName}' initialized with custom name: {playerName}");
             }
             else
             {

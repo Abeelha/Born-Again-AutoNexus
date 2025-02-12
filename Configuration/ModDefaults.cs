@@ -5,7 +5,6 @@
         public const float HEALTH_THRESHOLD = 0.2f;
         public const float GRACE_PERIOD_DEFAULT = 4.5f;
         public const float INIT_CHECK_INTERVAL = 5f;
-        public const float HEALTH_STABILITY_TIME = 2f;
         public const string DISCONNECT_KEY = "F";
         public const string TOGGLE_CHAT_KEY = "Return";
         public const string NEW_PLAYER_GUI_NAME = "---Custom Name =D---";

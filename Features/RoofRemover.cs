@@ -1,18 +1,19 @@
-using UnityEngine;
-using MelonLoader;
-using Il2Cpp;
 using System.Collections;
+using Il2Cpp;
 using Il2CppInterop.Runtime;
+using MelonLoader;
+using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace AutoNexus.Features
 {
     public class RoofRemover
     {
         private readonly MelonLogger.Instance _logger;
+        private float _checkInterval = 1f;
         private bool _isActive = false;
-        private float _checkInterval = 0.5f;
-        private HashSet<int> _processedChunkIds;
         private int _lastChunkCount = 0;
+        private HashSet<int> _processedChunkIds;
 
         public RoofRemover(MelonLogger.Instance logger)
         {
@@ -45,25 +46,25 @@ namespace AutoNexus.Features
 
         private void DisableAllCeilingChunks(bool forceUpdate)
         {
-            try 
+            try
             {
-                var objects = UnityEngine.Object.FindObjectsOfType(Il2CppType.Of<TileChunk>());
-                
+                var objects = Object.FindObjectsOfType(Il2CppType.Of<TileChunk>());
+
                 if (!forceUpdate && objects.Length == _lastChunkCount)
                     return;
 
                 _lastChunkCount = objects.Length;
-                
+
                 var ceilingChunks = objects?.Select(obj => obj.TryCast<TileChunk>())
-                                         .Where(chunk => chunk != null && 
-                                                       chunk.name.Contains("CeilingChunk"))
-                                         .ToArray();
+                    .Where(chunk => chunk != null &&
+                                    chunk.name.Contains("CeilingChunk"))
+                    .ToArray();
 
                 if (ceilingChunks != null && ceilingChunks.Length > 0)
                 {
                     foreach (var chunk in ceilingChunks)
                     {
-                        if (chunk == null) 
+                        if (chunk == null)
                             continue;
 
                         int instanceId = chunk.GetInstanceID();
@@ -95,7 +96,7 @@ namespace AutoNexus.Features
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _logger.Error($"Error in ceiling removal: {ex.Message}");
             }

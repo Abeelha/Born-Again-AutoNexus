@@ -1,5 +1,5 @@
-﻿using MelonLoader;
-using AutoNexus.Constants;
+﻿using AutoNexus.Constants;
+using MelonLoader;
 
 namespace AutoNexus.Configuration
 {
@@ -38,7 +38,8 @@ namespace AutoNexus.Configuration
         private void InitializeKeyBindings()
         {
             DisconnectKey = _config.CreateEntry("DisconnectKey", ModDefaults.DISCONNECT_KEY,
-                description: "Key to press for manual disconnect");
+                description:
+                "Key to press for manual disconnect. Can be a single character, function key, or special key name.");
         }
 
         private void InitializePlayerSettings()
@@ -57,12 +58,13 @@ namespace AutoNexus.Configuration
 
         private void InitializeAutoPotSettings()
         {
-            AutoPotHealthThreshold = _config.CreateEntry("AutoPotHealthThreshold", ModDefaults.AUTO_POT_HEALTH_THRESHOLD,
+            AutoPotHealthThreshold = _config.CreateEntry("AutoPotHealthThreshold",
+                ModDefaults.AUTO_POT_HEALTH_THRESHOLD,
                 description: "Percentage of health (e.g., 0.40 = 40%) at which the AutoPot feature triggers");
             AutoPotKey = _config.CreateEntry("AutoPotKey", ModDefaults.AUTO_POT_KEY,
-                description: "Key to press for AutoPot. Enter a single letter or digit (e.g., 1, 6 or A).");
+                description: "Key to press for AutoPot. Can be a letter, digit, function key, or special key name.");
             AutoPotToggleKey = _config.CreateEntry("AutoPotToggleKey", ModDefaults.AUTO_POT_TOGGLE_KEY,
-                description: "Key to toggle the AutoPot feature on/off. Default is H.");
+                description: "Key to toggle the AutoPot feature on/off. Can be any valid key name.");
         }
 
         private void LogSettings(MelonLogger.Instance logger)
@@ -72,7 +74,6 @@ namespace AutoNexus.Configuration
             logger.Msg("=== AutoNexus Settings ===");
             logger.Msg($"Health Threshold: {HealthThreshold.Value * 100:F2}%");
             logger.Msg($"Init Check Interval (fixed): {ModDefaults.INIT_CHECK_INTERVAL}s");
-            logger.Msg($"Health Stability Time (fixed): {ModDefaults.HEALTH_STABILITY_TIME}s");
             logger.Msg($"Grace Period (Default, fixed): {ModDefaults.GRACE_PERIOD_DEFAULT}s");
             logger.Msg($"Disconnect Key: {DisconnectKey.Value}");
             logger.Msg("=== Camera Settings ===");
