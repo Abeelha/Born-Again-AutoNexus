@@ -8,7 +8,6 @@ using AutoNexus.Constants;
 using AutoNexus.Helpers;
 using AutoNexus.Utils;
 using System.Runtime.CompilerServices;
-using AutoNexus.Helpers;
 using Il2CppRonin.Model.Enums;
 
 namespace AutoNexus.Features
@@ -94,6 +93,7 @@ namespace AutoNexus.Features
                 yield return waitInterval;
             }
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryInitializePlayer()
         {
@@ -125,10 +125,10 @@ namespace AutoNexus.Features
             return true;
         }
 
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update()
         {
-            UpdateAutoPotToggleKey();
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
                 Input.GetKeyDown(_currentAutoPotToggleKey))
             {
@@ -143,9 +143,6 @@ namespace AutoNexus.Features
             if (!ValidatePlayerState())
                 return;
 
-            int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
-            _monitorState.UpdateMaxHealth(maxHealth, _logger);
-            
             ProcessHealthCheck();
         }
 
@@ -184,17 +181,11 @@ namespace AutoNexus.Features
             int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
             _monitorState.UpdateMaxHealth(maxHealth, _logger);
 
-            float healthRatio = _monitorState.MaxHealth > 0 ? 
+            float healthRatio = _monitorState.MaxHealth > 0 ?
                 (float)currentHealth / _monitorState.MaxHealth : 1f;
 
             bool shouldPot = false;
             string reason = "";
-            
-            if (_monitorState.IsBurstDamageDetected && healthRatio < EMERGENCY_HEALTH_RATIO * 1.5f)
-            {
-                shouldPot = true;
-                reason = "burst damage detected";
-            }
 
             if (_monitorState.HealthDropRate < RAPID_HEALTH_DROP_THRESHOLD && healthRatio < EMERGENCY_HEALTH_RATIO)
             {
@@ -217,19 +208,9 @@ namespace AutoNexus.Features
         private IEnumerator SimulateKeyPress()
         {
             _isSimulatingKeyPress = true;
-            int healthBefore = _characterComponent.Health;
-            float timeBefore = Time.realtimeSinceStartup;
-    
             KeyDown(_autoPotKey);
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.1f); // Duration of key press
             KeyUp(_autoPotKey);
-
-            yield return new WaitForSeconds(AUTO_POT_DELAY);
-    
-            int healthAfter = _characterComponent.Health;
-            _monitorState.RecordPotionUse(healthBefore, healthAfter, timeBefore);
-    
-            _logger.Msg("AutoPot: Health potion key press simulation complete.");
             _isSimulatingKeyPress = false;
         }
 
@@ -249,21 +230,19 @@ namespace AutoNexus.Features
 
         #region keybd_event Interop
         [DllImport("user32.dll", SetLastError = true)]
-        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, System.UIntPtr dwExtraInfo);
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
         private const uint KEYEVENTF_KEYDOWN = 0x0;
         private const uint KEYEVENTF_KEYUP = 0x2;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void KeyDown(byte vk)
         {
-            keybd_event(vk, 0, KEYEVENTF_KEYDOWN, System.UIntPtr.Zero);
+            keybd_event(vk, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void KeyUp(byte vk)
         {
-            keybd_event(vk, 0, KEYEVENTF_KEYUP, System.UIntPtr.Zero);
+            keybd_event(vk, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
         }
         #endregion
     }

@@ -4,6 +4,9 @@ using AutoNexus.Features;
 using AutoNexus.Utils;
 using AutoNexus.UI;
 using UnityEngine;
+using System.Net;
+using Il2Cpp;
+using Il2CppZero.Game.Client;
 
 namespace AutoNexus
 {
@@ -37,7 +40,51 @@ namespace AutoNexus
 
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
         }
-        
+
+
+
+        private static void Test()
+        {
+            RoninGameService roninGameService = new RoninGameService();
+            ZeroClient client = roninGameService.Client; // Get the value
+
+            client.UpdateState();
+            //client._transferDelay = 0;
+        }
+
+
+        private static void UpdateSpam()
+        {
+            RoninGameService roninGameService = new RoninGameService();
+            ZeroClient client = roninGameService.Client; // Get the value
+            //Il2CppSystem.Net.IPAddress ipAddress = Il2CppSystem.Net.IPAddress.Parse("18.192.45.68");
+            //string key = "IDuP6FWmtZmGvwhzncmD";
+            //int port = 12000;
+
+            for (int i = 0; i < 1000; i++)
+            {
+                client.Update(uint.MaxValue);
+                client.SetConnected();
+                client.SendData(uint.MaxValue);
+                client.ReceiveData(uint.MaxValue);
+                //client.Start(ipAddress, port, key);
+            }
+        }
+
+        public static void ConnectSpam()
+        {
+            RoninGameService roninGameService = new RoninGameService();
+            ZeroClient client = roninGameService.Client; // Get the value
+            Il2CppSystem.Net.IPAddress ipAddress = Il2CppSystem.Net.IPAddress.Parse("18.192.45.68");
+            string key = "IDuP6FWmtZmGvwhzncmD";
+            int port = 12000;
+
+            for (int i = 0; i < 1000; i++)
+            {
+                client.Start(ipAddress, port, key);
+            }
+        }
+
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
             roofRemover.RemoveRoofs();

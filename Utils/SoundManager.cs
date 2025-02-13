@@ -1,60 +1,62 @@
 ﻿using System.Runtime.InteropServices;
+using MelonLoader;
 using AutoNexus.Constants;
 
-namespace AutoNexus.Utils;
-
-public class SoundManager
+namespace AutoNexus.Utils
 {
-    private readonly MelonLogger.Instance _logger;
-
-    public SoundManager(MelonLogger.Instance logger)
+    public class SoundManager
     {
-        _logger = logger;
-        EnsureSoundDirectory();
-    }
+        private readonly MelonLogger.Instance _logger;
 
-    [DllImport("winmm.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    private static extern bool PlaySound(string pszSound, IntPtr hmod, uint fdwSound);
+        [DllImport("winmm.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool PlaySound(string pszSound, System.IntPtr hmod, uint fdwSound);
 
-    private void EnsureSoundDirectory()
-    {
-        var soundsFolder = "Mods/sounds";
-        if (!Directory.Exists(soundsFolder))
+        public SoundManager(MelonLogger.Instance logger)
         {
-            Directory.CreateDirectory(soundsFolder);
-            _logger.Msg($"Created sounds folder at: {soundsFolder}");
+            _logger = logger;
+            EnsureSoundDirectory();
         }
-    }
 
-    public void PlayAutoNexusToggleSound(bool isEnabled)
-    {
-        var soundFilePath = isEnabled ? "Mods/sounds/enableNexusInsta.wav" : "Mods/sounds/disableNexusInsta.wav";
-        if (File.Exists(soundFilePath))
+        private void EnsureSoundDirectory()
         {
-            if (!PlaySound(soundFilePath, IntPtr.Zero, ModDefaults.Sound.SND_ASYNC | ModDefaults.Sound.SND_FILENAME))
+            string soundsFolder = "Mods/sounds";
+            if (!System.IO.Directory.Exists(soundsFolder))
             {
-                _logger.Error($"Failed to play sound file: {soundFilePath}");
+                System.IO.Directory.CreateDirectory(soundsFolder);
+                _logger.Msg($"Created sounds folder at: {soundsFolder}");
             }
         }
-        else
-        {
-            _logger.Error($"Sound file not found: {soundFilePath}");
-        }
-    }
 
-    public void PlayAutoPotToggleSound(bool isEnabled)
-    {
-        var soundFilePath = isEnabled ? "Mods/sounds/enableAutoPot.wav" : "Mods/sounds/disableAutoPot.wav";
-        if (File.Exists(soundFilePath))
+        public void PlayAutoNexusToggleSound(bool isEnabled)
         {
-            if (!PlaySound(soundFilePath, IntPtr.Zero, ModDefaults.Sound.SND_ASYNC | ModDefaults.Sound.SND_FILENAME))
+            string soundFilePath = isEnabled ? "Mods/sounds/enableNexusInsta.wav" : "Mods/sounds/disableNexusInsta.wav";
+            if (System.IO.File.Exists(soundFilePath))
             {
-                _logger.Error($"Failed to play sound file: {soundFilePath}");
+                if (!PlaySound(soundFilePath, System.IntPtr.Zero, ModDefaults.Sound.SND_ASYNC | ModDefaults.Sound.SND_FILENAME))
+                {
+                    _logger.Error($"Failed to play sound file: {soundFilePath}");
+                }
+            }
+            else
+            {
+                _logger.Error($"Sound file not found: {soundFilePath}");
             }
         }
-        else
+
+        public void PlayAutoPotToggleSound(bool isEnabled)
         {
-            _logger.Error($"Sound file not found: {soundFilePath}");
+            string soundFilePath = isEnabled ? "Mods/sounds/enableAutoPot.wav" : "Mods/sounds/disableAutoPot.wav";
+            if (System.IO.File.Exists(soundFilePath))
+            {
+                if (!PlaySound(soundFilePath, System.IntPtr.Zero, ModDefaults.Sound.SND_ASYNC | ModDefaults.Sound.SND_FILENAME))
+                {
+                    _logger.Error($"Failed to play sound file: {soundFilePath}");
+                }
+            }
+            else
+            {
+                _logger.Error($"Sound file not found: {soundFilePath}");
+            }
         }
     }
 }

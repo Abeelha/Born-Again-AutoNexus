@@ -3,6 +3,7 @@ using MelonLoader;
 using Il2Cpp;
 using System.Collections;
 using Il2CppInterop.Runtime;
+using Il2CppZero.Game.Client;
 
 namespace AutoNexus.Features
 {
@@ -42,6 +43,8 @@ namespace AutoNexus.Features
                 yield return waitInterval;
             }
         }
+
+
 
         private void DisableAllCeilingChunks(bool forceUpdate)
         {

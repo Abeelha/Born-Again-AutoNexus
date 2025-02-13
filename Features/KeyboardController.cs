@@ -1,9 +1,10 @@
-﻿using UnityEngine;
+﻿// KeyboardController.cs
+using UnityEngine;
 using AutoNexus.Configuration;
 using MelonLoader;
-using AutoNexus.Constants;
 using AutoNexus.Utils;
 using AutoNexus.Helpers;
+using AutoNexus.Constants;
 
 namespace AutoNexus.Features
 {
@@ -11,11 +12,12 @@ namespace AutoNexus.Features
     {
         private readonly ModConfig _config;
         private readonly MelonLogger.Instance _logger;
-        private readonly SoundManager _soundManager;
         private KeyCode _currentDisconnectKey;
         private KeyCode _currentToggleChatKey;
         private bool _isChatMode;
         private bool _isDisconnectEnabled = true;
+        private readonly SoundManager _soundManager;
+
 
         public KeyboardController(ModConfig config, MelonLogger.Instance logger, SoundManager soundManager)
         {
@@ -34,10 +36,7 @@ namespace AutoNexus.Features
 
         private void HandleDisconnectKey()
         {
-            UpdateDisconnectKey();
-
-            if (!_isChatMode && _isDisconnectEnabled && Input.GetKeyDown(_currentDisconnectKey) &&
-                !Input.GetKey(KeyCode.LeftControl) && !Input.GetKey(KeyCode.RightControl))
+            if (!_isChatMode && _isDisconnectEnabled && Input.GetKeyDown(_currentDisconnectKey))
             {
                 _logger.Msg($"Disconnect key '{_currentDisconnectKey}' pressed. Initiating disconnect...");
                 DisconnectFromWorld();
@@ -46,8 +45,6 @@ namespace AutoNexus.Features
 
         private void HandleToggleChatKey()
         {
-            UpdateToggleChatKey();
-
             if (Input.GetKeyDown(_currentToggleChatKey))
             {
                 _isChatMode = !_isChatMode;
@@ -67,55 +64,17 @@ namespace AutoNexus.Features
 
         private void UpdateKeys()
         {
-            UpdateDisconnectKey();
-            UpdateToggleChatKey();
-        }
-
-        private void UpdateDisconnectKey()
-        {
-            try
-            {
-                _currentDisconnectKey = KeyInputHelper.ParseKeyInput(_config.DisconnectKey.Value);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Invalid KeyCode '{_config.DisconnectKey.Value}' in config. Reverting to default key 'F'. Exception: {ex.Message}");
-                _currentDisconnectKey = KeyCode.F;
-                _config.DisconnectKey.Value = ModDefaults.DISCONNECT_KEY;
-            }
-        }
-
-        private void UpdateToggleChatKey()
-        {
-            try
-            {
-                _currentToggleChatKey = KeyInputHelper.ParseKeyInput(ModDefaults.TOGGLE_CHAT_KEY);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Invalid ToggleChatKey in defaults. Reverting to default key 'Return'. Exception: {ex.Message}");
-                _currentToggleChatKey = KeyCode.Return;
-            }
+            _currentDisconnectKey = KeyInputHelper.ParseKeyInput(_config.DisconnectKey.Value);
+            _currentToggleChatKey = KeyInputHelper.ParseKeyInput(ModDefaults.TOGGLE_CHAT_KEY);
         }
 
         private void DisconnectFromWorld()
         {
-            try
+            var world = UnityEngine.Object.FindObjectOfType<Il2Cpp.World>();
+            if (world != null)
             {
-                var world = UnityEngine.Object.FindObjectOfType<Il2Cpp.World>();
-                if (world == null)
-                {
-                    _logger.Warning("World object not found.");
-                    return;
-                }
-
-                _logger.Msg("Disconnecting from world...");
                 world.Disconnect();
                 _logger.Msg("Disconnected successfully.");
-            }
-            catch (System.Exception ex)
-            {
-                _logger.Error($"Disconnect error: {ex.Message}");
             }
         }
     }
