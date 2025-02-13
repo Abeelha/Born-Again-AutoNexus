@@ -1,55 +1,71 @@
-﻿using AutoNexus.Configuration;
-using Il2Cpp;
+﻿using UnityEngine;
+using MelonLoader;
+using AutoNexus.Configuration;
 
-namespace AutoNexus.Features;
-
-public class NameChanger
+namespace AutoNexus.Features
 {
-    private readonly ModConfig _config;
-    private readonly MelonLogger.Instance _logger;
-
-    private readonly string _playerObjectName;
-
-    private GameObject _cachedPlayerObject;
-
-    public NameChanger(ModConfig config, MelonLogger.Instance logger, string playerObjectName = "Character(Clone)")
+    public class NameChanger
     {
-        _config = config;
-        _logger = logger;
-        _playerObjectName = playerObjectName;
-    }
+        private readonly ModConfig _config;
+        private readonly MelonLogger.Instance _logger;
 
-    public void Update()
-    {
-        var currentPlayerObject = GameObject.Find(_playerObjectName);
+        private readonly string _playerObjectName;
 
-        if (currentPlayerObject == null)
-            return;
+        private GameObject _cachedPlayerObject;
 
-        if (currentPlayerObject != _cachedPlayerObject)
+        public NameChanger(ModConfig config, MelonLogger.Instance logger, string playerObjectName = "Character(Clone)")
         {
-            _cachedPlayerObject = currentPlayerObject;
-            ApplyCustomName(currentPlayerObject);
+            _config = config;
+            _logger = logger;
+            _playerObjectName = playerObjectName;
         }
-    }
 
-    private void ApplyCustomName(GameObject playerObject)
-    {
-        var entity = playerObject.GetComponent<Entity>();
-        if (entity != null)
+        public void Update()
         {
-            var playerName = _config.PlayerName.Value;
-            _logger.Msg($"[NameChanger] Setting entity name and GUI name to: {playerName}");
+            GameObject currentPlayerObject = GameObject.Find(_playerObjectName);
 
-            entity.SetEntityName(playerName);
-            entity.SetEntityGuiName(playerName);
+            if (currentPlayerObject == null)
+                return;
 
-            _logger.Msg(
-                $"[NameChanger] Player object '{_playerObjectName}' initialized with custom name: {playerName}");
+            if (currentPlayerObject != _cachedPlayerObject)
+            {
+                _cachedPlayerObject = currentPlayerObject;
+                ApplyCustomName(currentPlayerObject);
+            }
         }
-        else
+        public void ForceNameUpdate()
         {
-            _logger.Warning($"[NameChanger] Entity component not found on player object: {_playerObjectName}");
+            if (_cachedPlayerObject != null)
+            {
+                ApplyCustomName(_cachedPlayerObject);
+            }
+            else
+            {
+                GameObject currentPlayerObject = GameObject.Find(_playerObjectName);
+                if (currentPlayerObject != null)
+                {
+                    ApplyCustomName(currentPlayerObject);
+                }
+            }
+        }
+
+        private void ApplyCustomName(GameObject playerObject)
+        {
+            var entity = playerObject.GetComponent<Il2Cpp.Entity>();
+            if (entity != null)
+            {
+                string playerName = _config.PlayerName.Value;
+                _logger.Msg($"[NameChanger] Setting entity name and GUI name to: {playerName}");
+
+                entity.SetEntityName(playerName);
+                entity.SetEntityGuiName(playerName);
+
+                _logger.Msg($"[NameChanger] Player object '{_playerObjectName}' initialized with custom name: {playerName}");
+            }
+            else
+            {
+                _logger.Warning($"[NameChanger] Entity component not found on player object: {_playerObjectName}");
+            }
         }
     }
 }

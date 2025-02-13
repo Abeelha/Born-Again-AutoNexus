@@ -1,133 +1,135 @@
-using System.Collections;
+using UnityEngine;
+using MelonLoader;
 using Il2Cpp;
+using System.Collections;
 using Il2CppInterop.Runtime;
-using Object = UnityEngine.Object;
 
-namespace AutoNexus.Features;
-
-public class RoofRemover
+namespace AutoNexus.Features
 {
-    private readonly MelonLogger.Instance _logger;
-    private float _checkInterval = 0.5f;
-    private bool _isActive;
-    private int _lastChunkCount;
-    private HashSet<int> _processedChunkIds;
-
-    public RoofRemover(MelonLogger.Instance logger)
+    public class RoofRemover
     {
-        _logger = logger;
-        _processedChunkIds = new HashSet<int>();
-    }
+        private readonly MelonLogger.Instance _logger;
+        private bool _isActive = false;
+        private float _checkInterval = 1f;
+        private HashSet<int> _processedChunkIds;
+        private int _lastChunkCount = 0;
 
-    public void RemoveRoofs()
-    {
-        if (!_isActive)
+        public RoofRemover(MelonLogger.Instance logger)
         {
-            _isActive = true;
-            _processedChunkIds.Clear();
-            MelonCoroutines.Start(MonitorForNewChunks());
+            _logger = logger;
+            _processedChunkIds = new HashSet<int>();
         }
 
-        DisableAllCeilingChunks(true);
-    }
-
-    private IEnumerator MonitorForNewChunks()
-    {
-        var waitInterval = new WaitForSeconds(_checkInterval);
-
-        while (_isActive)
+        public void RemoveRoofs()
         {
-            DisableAllCeilingChunks(false);
-            yield return waitInterval;
-        }
-    }
-
-    private void DisableAllCeilingChunks(bool forceUpdate)
-    {
-        try
-        {
-            var objects = Object.FindObjectsOfType(Il2CppType.Of<TileChunk>());
-
-            if (!forceUpdate && objects.Length == _lastChunkCount)
-                return;
-
-            _lastChunkCount = objects.Length;
-
-            var ceilingChunks = objects?.Select(obj => obj.TryCast<TileChunk>())
-                .Where(chunk => chunk != null &&
-                                chunk.name.Contains("CeilingChunk"))
-                .ToArray();
-
-            if (ceilingChunks != null && ceilingChunks.Length > 0)
+            if (!_isActive)
             {
-                foreach (var chunk in ceilingChunks)
-                {
-                    if (chunk == null)
-                        continue;
+                _isActive = true;
+                _processedChunkIds.Clear();
+                MelonCoroutines.Start(MonitorForNewChunks());
+            }
 
-                    var instanceId = chunk.GetInstanceID();
-                    if (!forceUpdate && _processedChunkIds.Contains(instanceId))
-                        continue;
+            DisableAllCeilingChunks(true);
+        }
 
-                    chunk.SetActive(false);
+        private IEnumerator MonitorForNewChunks()
+        {
+            var waitInterval = new WaitForSeconds(_checkInterval);
 
-                    if (chunk.MeshRenderer != null)
-                    {
-                        chunk.MeshRenderer.enabled = false;
-                    }
-
-                    if (chunk.Size != null)
-                    {
-                        var totalTiles = chunk.Size.x * chunk.Size.y;
-                        for (var i = 0; i < totalTiles; i++)
-                        {
-                            chunk.SetAlpha(0f, i);
-                        }
-                    }
-
-                    _processedChunkIds.Add(instanceId);
-                }
-
-                if (_processedChunkIds.Count > 1000)
-                {
-                    _processedChunkIds.Clear();
-                }
+            while (_isActive)
+            {
+                DisableAllCeilingChunks(false);
+                yield return waitInterval;
             }
         }
-        catch (Exception ex)
+
+        private void DisableAllCeilingChunks(bool forceUpdate)
         {
-            _logger.Error($"Error in ceiling removal: {ex.Message}");
+            try 
+            {
+                var objects = UnityEngine.Object.FindObjectsOfType(Il2CppType.Of<TileChunk>());
+                
+                if (!forceUpdate && objects.Length == _lastChunkCount)
+                    return;
+
+                _lastChunkCount = objects.Length;
+                
+                var ceilingChunks = objects?.Select(obj => obj.TryCast<TileChunk>())
+                                         .Where(chunk => chunk != null && 
+                                                       chunk.name.Contains("CeilingChunk"))
+                                         .ToArray();
+
+                if (ceilingChunks != null && ceilingChunks.Length > 0)
+                {
+                    foreach (var chunk in ceilingChunks)
+                    {
+                        if (chunk == null) 
+                            continue;
+
+                        int instanceId = chunk.GetInstanceID();
+                        if (!forceUpdate && _processedChunkIds.Contains(instanceId))
+                            continue;
+
+                        chunk.SetActive(false);
+
+                        if (chunk.MeshRenderer != null)
+                        {
+                            chunk.MeshRenderer.enabled = false;
+                        }
+
+                        if (chunk.Size != null)
+                        {
+                            int totalTiles = chunk.Size.x * chunk.Size.y;
+                            for (int i = 0; i < totalTiles; i++)
+                            {
+                                chunk.SetAlpha(0f, i);
+                            }
+                        }
+
+                        _processedChunkIds.Add(instanceId);
+                    }
+
+                    if (_processedChunkIds.Count > 1000)
+                    {
+                        _processedChunkIds.Clear();
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                _logger.Error($"Error in ceiling removal: {ex.Message}");
+            }
         }
-    }
 
-    public void OnNewInstance()
-    {
-        _logger.Msg("New instance detected - Cleaning up old roof removal data");
-        CleanupOldData();
-        RemoveRoofs();
-    }
+        public void OnNewInstance()
+        {
+            _logger.Msg("New instance detected - Cleaning up old roof removal data");
+            CleanupOldData();
+            RemoveRoofs();
+        }
 
-    private void CleanupOldData()
-    {
-        _processedChunkIds.Clear();
-        _lastChunkCount = 0;
-        _isActive = false;
-    }
+        private void CleanupOldData()
+        {
+            _processedChunkIds.Clear();
+            _lastChunkCount = 0;
+            _isActive = false;
+        }
 
-    public void Stop()
-    {
-        _isActive = false;
-        CleanupOldData();
-    }
+        public void Stop()
+        {
+            _isActive = false;
+            CleanupOldData();
+        }
 
-    public void Reset()
-    {
-        Stop();
-        RemoveRoofs();
-    }
+        public void Reset()
+        {
+            Stop();
+            RemoveRoofs();
+        }
 
-    public void ForceRoofRemoval()
-    {
-        DisableAllCeilingChunks(true);
+        public void ForceRoofRemoval()
+        {
+            DisableAllCeilingChunks(true);
+        }
     }
 }
