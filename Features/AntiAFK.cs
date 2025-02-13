@@ -5,18 +5,18 @@ namespace AutoNexus.Features;
 
 public class AntiAFK
 {
-    private readonly MelonLogger.Instance _logger;
-    private float _lastWASDTime;
-    private bool _isSimulating;
-
     private const float IdleThreshold = 115f;
     private const float DKeyPressDuration = 0.1f;
+    private readonly MelonLogger.Instance _logger;
+    private bool _isSimulating;
+    private float _lastWASDTime;
 
     public AntiAFK(MelonLogger.Instance logger)
     {
         _logger = logger;
         _lastWASDTime = Time.time;
     }
+
     public void Update()
     {
         CheckWASDInput();
@@ -26,6 +26,7 @@ public class AntiAFK
             MelonCoroutines.Start(SimulateDKeyPress());
         }
     }
+
     private void CheckWASDInput()
     {
         if (Input.GetKeyDown(KeyCode.W) ||
@@ -36,6 +37,7 @@ public class AntiAFK
             _lastWASDTime = Time.time;
         }
     }
+
     private IEnumerator SimulateDKeyPress()
     {
         _isSimulating = true;
@@ -49,6 +51,7 @@ public class AntiAFK
         _lastWASDTime = Time.time;
         _isSimulating = false;
     }
+
     #region keybd_event Interop
 
     [DllImport("user32.dll", SetLastError = true)]
@@ -61,9 +64,11 @@ public class AntiAFK
     {
         keybd_event(vk, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
     }
+
     private void KeyUp(byte vk)
     {
         keybd_event(vk, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
     }
+
     #endregion
 }
