@@ -22,6 +22,7 @@ namespace AutoNexus
         private AntiAFK antiAFK;
         private AutoPot autoPot;
         private ConfigDisplay configDisplay;
+        private DupeClass dupeClass;
 
         public override void OnInitializeMelon()
         {
@@ -36,54 +37,13 @@ namespace AutoNexus
             nameChanger = new NameChanger(config, LoggerInstance, "Character(Clone)");
             antiAFK = new AntiAFK(LoggerInstance);
             autoPot = new AutoPot(LoggerInstance, config, soundManager);
+            dupeClass = new DupeClass(config, LoggerInstance);
             configDisplay = new ConfigDisplay(config, LoggerInstance, nameChanger);
 
             LoggerInstance.Msg("AutoNexus Mod Initialized.");
         }
 
 
-
-        private static void Test()
-        {
-            RoninGameService roninGameService = new RoninGameService();
-            ZeroClient client = roninGameService.Client; // Get the value
-
-            client.UpdateState();
-            //client._transferDelay = 0;
-        }
-
-
-        private static void UpdateSpam()
-        {
-            RoninGameService roninGameService = new RoninGameService();
-            ZeroClient client = roninGameService.Client; // Get the value
-            //Il2CppSystem.Net.IPAddress ipAddress = Il2CppSystem.Net.IPAddress.Parse("18.192.45.68");
-            //string key = "IDuP6FWmtZmGvwhzncmD";
-            //int port = 12000;
-
-            for (int i = 0; i < 1000; i++)
-            {
-                client.Update(uint.MaxValue);
-                client.SetConnected();
-                client.SendData(uint.MaxValue);
-                client.ReceiveData(uint.MaxValue);
-                //client.Start(ipAddress, port, key);
-            }
-        }
-
-        public static void ConnectSpam()
-        {
-            RoninGameService roninGameService = new RoninGameService();
-            ZeroClient client = roninGameService.Client; // Get the value
-            Il2CppSystem.Net.IPAddress ipAddress = Il2CppSystem.Net.IPAddress.Parse("18.192.45.68");
-            string key = "IDuP6FWmtZmGvwhzncmD";
-            int port = 12000;
-
-            for (int i = 0; i < 1000; i++)
-            {
-                client.Start(ipAddress, port, key);
-            }
-        }
 
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
@@ -110,7 +70,8 @@ namespace AutoNexus
             autoNexus?.Update();
             configDisplay?.Update();
             configDisplay?.Update();
-            
+            dupeClass?.Update();
+
             if (Input.GetKeyDown(KeyCode.Insert))
             {
                 configDisplay?.ToggleVisibility();

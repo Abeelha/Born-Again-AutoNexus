@@ -129,6 +129,7 @@ namespace AutoNexus.Features
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update()
         {
+
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
                 Input.GetKeyDown(_currentAutoPotToggleKey))
             {

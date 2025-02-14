@@ -7,6 +7,7 @@ using AutoNexus.Helpers;
 using Il2Cpp;
 using System.Runtime.CompilerServices;
 using Il2CppRonin.Model.Enums;
+using Il2CppZero.Game.Client;
 
 namespace AutoNexus.Features
 {
@@ -155,6 +156,7 @@ namespace AutoNexus.Features
 
                 _accumulatedTime = 0f;
             }
+
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -186,6 +188,7 @@ namespace AutoNexus.Features
         {
             var waitInterval = new WaitForSeconds(MIN_UPDATE_INTERVAL);
             int lastLoggedHealth = -1;
+
 
             while (_isMonitoringActive)
             {
