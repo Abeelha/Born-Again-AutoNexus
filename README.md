@@ -1,7 +1,8 @@
+## 🎮 Showcase Auto-nexus
 
+[![AutoNexus Demo 1](https://img.youtube.com/vi/M5oGhxLV4lQ/maxresdefault.jpg)](https://youtu.be/M5oGhxLV4lQ)
 
-
-https://github.com/user-attachments/assets/f3d3f954-ea85-4179-900a-dca1b991238c
+[![AutoNexus Demo 2](https://img.youtube.com/vi/OQiG1MqEyps/maxresdefault.jpg)](https://youtu.be/OQiG1MqEyps)
 
 # Installation Guide
 ## Prerequisites
@@ -24,7 +25,12 @@ Download and install .NET 6.0 from the official Microsoft website:
 2. Close the game after it fully loads
 
 ### Step 2: Download and Install the DLL
-1. **Download the latest version** from: [Autonexus DLL]() ✅
+## 📥 Download
+
+### Latest Release: v1.0.0
+- **[Download AutoNexus.dll](https://github.com/Abeelha/Born-Again-AutoNexus/releases/download/v1.0.0/AutoNexus.dll)** (50 KB)
+- **[Download Sound Pack](https://github.com/Abeelha/Born-Again-AutoNexus/releases/download/v1.0.0/sounds-nexus-again.7z)** (209 KB)
+- **[View All Releases](https://github.com/Abeelha/Born-Again-AutoNexus/releases)**
 2. Navigate to your game's root folder: `\Steam\steamapps\common\Born Again\Mods`
 3. Place the downloaded DLL file in the `Mods` folder
 
@@ -151,8 +157,12 @@ Config file location: `\Steam\steamapps\common\Born Again\UserData\MelonPreferen
 ### User Experience
 - **Streamlined configuration** with UI-based settings
 - **Roof transparency** for better visibility
+<img width="904" height="852" alt="image" src="https://github.com/user-attachments/assets/b40a2373-30d5-43cf-b3aa-01c2b03278ce" />
+
 - **Anti-AFK system** for continuous gameplay
 - **Custom naming** for content creation safety
+<img width="499" height="132" alt="image" src="https://github.com/user-attachments/assets/c529bb55-ff01-4e44-92d6-f1669d6410e3" />
+
 
 ## 🎯 Usage Tips
 
