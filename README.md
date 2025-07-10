@@ -1,8 +1,12 @@
 ## 🎮 Showcase Auto-nexus
 
+**Click thumbnails below to watch demos:**
+
 [![AutoNexus Demo 1](https://img.youtube.com/vi/M5oGhxLV4lQ/maxresdefault.jpg)](https://youtu.be/M5oGhxLV4lQ)
+*Demo 1: AutoNexus in action*
 
 [![AutoNexus Demo 2](https://img.youtube.com/vi/OQiG1MqEyps/maxresdefault.jpg)](https://youtu.be/OQiG1MqEyps)
+*Demo 2: Features showcase*
 
 # Installation Guide
 ## Prerequisites
