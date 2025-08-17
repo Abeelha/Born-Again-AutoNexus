@@ -93,6 +93,7 @@ Download and install .NET 6.0 from the official Microsoft website:
 <img width="417" height="454" alt="image" src="https://github.com/user-attachments/assets/20258054-6189-4981-8d36-f7041e7ec124" />
 
 - **In-game configuration UI** for easy settings adjustment
+- **PRESS "INSERT" TO OPEN UI**
 - **Toggle UI with Insert key** - no more manual config file editing
 - **Real-time settings updates** without game restart
 
