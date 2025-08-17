@@ -17,7 +17,6 @@ namespace AutoNexus.Features
         private GameObject _playerCharacter;
         private Character _characterComponent;
         private Entity _entityComponent;
-        private Il2CppRonin.Model.Structs.Stats _entityStats;
         private readonly HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
 
         private bool _gracePeriodActive;
@@ -29,6 +28,9 @@ namespace AutoNexus.Features
         private float _lastUpdateTime;
         private float _accumulatedTime;
         private const float MIN_UPDATE_INTERVAL = 1f / 165f;
+        
+        // Cached max health to avoid expensive IL2CPP calls
+        private int _cachedMaxHealth = -1;
 
         public AutoNexus(ModConfig config, MelonLogger.Instance logger)
         {
@@ -96,9 +98,22 @@ namespace AutoNexus.Features
             int currentHealth = _characterComponent.Health;
             _monitorState.LastHealthValue = currentHealth;
     
-            int statsMaxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
-    
-            _monitorState.UpdateMaxHealth(statsMaxHealth, _logger);
+            RefreshMaxHealth();
+            _monitorState.UpdateMaxHealth(_cachedMaxHealth, _logger);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void RefreshMaxHealth()
+        {
+            _cachedMaxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int GetMaxHealth()
+        {
+            if (_cachedMaxHealth == -1)
+                RefreshMaxHealth();
+            return _cachedMaxHealth;
         }
 
         private void InitializeEntityName()
@@ -135,7 +150,7 @@ namespace AutoNexus.Features
 
                 try
                 {
-                    int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+                    int maxHealth = GetMaxHealth();
                     _monitorState.UpdateMaxHealth(maxHealth, _logger);
         
                     int currentHealth = _characterComponent.Health;
@@ -227,8 +242,8 @@ namespace AutoNexus.Features
                 _entityComponent = _playerCharacter.GetComponent<Il2Cpp.Entity>();
                 if (_entityComponent != null)
                 {
-                    int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
-                    _monitorState.UpdateMaxHealth(maxHealth, _logger);
+                    RefreshMaxHealth(); // Refresh cache after reconnection
+                    _monitorState.UpdateMaxHealth(_cachedMaxHealth, _logger);
                 }
 
                 StartGracePeriod(ModDefaults.GRACE_PERIOD_DEFAULT);
@@ -241,7 +256,7 @@ namespace AutoNexus.Features
         private void ProcessHealthCheck(ref int lastLoggedHealth)
         {
             int currentHealth = _characterComponent.Health;
-            int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+            int maxHealth = GetMaxHealth();
             _monitorState.UpdateMaxHealth(maxHealth, _logger);
 
             if (currentHealth != lastLoggedHealth)

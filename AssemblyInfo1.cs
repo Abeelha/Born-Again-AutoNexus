@@ -1,4 +1,4 @@
 using AutoNexus;
 
-[assembly: MelonInfo(typeof(AutonexusMod), "Nexus Again", "0.1.6", "Malarden")]
+[assembly: MelonInfo(typeof(AutonexusMod), "Nexus Again", "0.2.0", "Abeelha")]
 [assembly: MelonGame("Unnamed Studios", "Born Again")]

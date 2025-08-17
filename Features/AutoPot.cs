@@ -8,7 +8,6 @@ using AutoNexus.Constants;
 using AutoNexus.Helpers;
 using AutoNexus.Utils;
 using System.Runtime.CompilerServices;
-using AutoNexus.Helpers;
 using Il2CppRonin.Model.Enums;
 
 namespace AutoNexus.Features
@@ -21,7 +20,6 @@ namespace AutoNexus.Features
         private GameObject _playerCharacter;
         private Character _characterComponent;
         private Entity _entityComponent;
-        private Il2CppRonin.Model.Structs.Stats _entityStats;
         private HealthMonitorState _monitorState = HealthMonitoringHelper.SharedState;
         private bool _isSimulatingKeyPress;
         private byte _autoPotKey;
@@ -33,6 +31,9 @@ namespace AutoNexus.Features
         private const float AUTO_POT_DELAY = 0.5f;
         private const float RAPID_HEALTH_DROP_THRESHOLD = -50f;
         private const float EMERGENCY_HEALTH_RATIO = 0.3f;
+
+        // Cached max health to avoid expensive IL2CPP calls
+        private int _cachedMaxHealth = -1;
 
         public AutoPot(MelonLogger.Instance logger, ModConfig config, SoundManager soundManager)
         {
@@ -118,11 +119,25 @@ namespace AutoNexus.Features
             int currentHealth = _characterComponent.Health;
             _monitorState.LastHealthValue = currentHealth;
 
-            int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
-            _monitorState.UpdateMaxHealth(maxHealth, _logger);
+            RefreshMaxHealth();
+            _monitorState.UpdateMaxHealth(_cachedMaxHealth, _logger);
 
             _logger.Msg($"AutoPot: Initial max health set to {_monitorState.MaxHealth}");
             return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void RefreshMaxHealth()
+        {
+            _cachedMaxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int GetMaxHealth()
+        {
+            if (_cachedMaxHealth == -1)
+                RefreshMaxHealth();
+            return _cachedMaxHealth;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -143,9 +158,9 @@ namespace AutoNexus.Features
             if (!ValidatePlayerState())
                 return;
 
-            int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+            int maxHealth = GetMaxHealth();
             _monitorState.UpdateMaxHealth(maxHealth, _logger);
-            
+
             ProcessHealthCheck();
         }
 
@@ -167,8 +182,8 @@ namespace AutoNexus.Features
                 _entityComponent = _playerCharacter.GetComponent<Il2Cpp.Entity>();
                 if (_entityComponent != null)
                 {
-                    int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
-                    _monitorState.UpdateMaxHealth(maxHealth, _logger);
+                    RefreshMaxHealth();
+                    _monitorState.UpdateMaxHealth(_cachedMaxHealth, _logger);
                 }
 
                 StartGracePeriod(ModDefaults.GRACE_PERIOD_DEFAULT);
@@ -181,15 +196,15 @@ namespace AutoNexus.Features
         private void ProcessHealthCheck()
         {
             int currentHealth = _characterComponent.Health;
-            int maxHealth = _entityComponent.GetStatFunctional(StatType.MaxHealth);
+            int maxHealth = GetMaxHealth();
             _monitorState.UpdateMaxHealth(maxHealth, _logger);
 
-            float healthRatio = _monitorState.MaxHealth > 0 ? 
+            float healthRatio = _monitorState.MaxHealth > 0 ?
                 (float)currentHealth / _monitorState.MaxHealth : 1f;
 
             bool shouldPot = false;
             string reason = "";
-            
+
             if (_monitorState.IsBurstDamageDetected && healthRatio < EMERGENCY_HEALTH_RATIO * 1.5f)
             {
                 shouldPot = true;
@@ -219,16 +234,16 @@ namespace AutoNexus.Features
             _isSimulatingKeyPress = true;
             int healthBefore = _characterComponent.Health;
             float timeBefore = Time.realtimeSinceStartup;
-    
+
             KeyDown(_autoPotKey);
             yield return new WaitForSeconds(0.1f);
             KeyUp(_autoPotKey);
 
             yield return new WaitForSeconds(AUTO_POT_DELAY);
-    
+
             int healthAfter = _characterComponent.Health;
             _monitorState.RecordPotionUse(healthBefore, healthAfter, timeBefore);
-    
+
             _logger.Msg("AutoPot: Health potion key press simulation complete.");
             _isSimulatingKeyPress = false;
         }

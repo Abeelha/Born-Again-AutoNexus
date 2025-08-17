@@ -7,7 +7,6 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 using System.Collections;
 using AutoNexus.Features;
-using UnityEngine.UI;
 using AutoNexus.Helpers;
 
 namespace AutoNexus.UI
@@ -68,8 +67,6 @@ namespace AutoNexus.UI
         private Image _saveButtonImage;
         private TextMeshProUGUI _saveButtonText;
 
-        private Vector3 _originalScale;
-        private Vector2 _originalSize;
         
         public ConfigDisplay(ModConfig config, MelonLogger.Instance logger, NameChanger nameChanger)
         {
