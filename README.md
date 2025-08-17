@@ -32,7 +32,7 @@ Download and install .NET 6.0 from the official Microsoft website:
 ## 📥 Download
 
 ### Latest Release: v1.0.0
-- **[Download AutoNexus.dll](https://github.com/Abeelha/Born-Again-AutoNexus/releases/download/v1.0.0/AutoNexus.dll)** (50 KB)
+- **[Download AutoNexus.dll](https://github.com/Abeelha/Born-Again-AutoNexus/releases/download/v1.5.0/AutoNexus.dll)** (50 KB)
 - **[Download Sound Pack](https://github.com/Abeelha/Born-Again-AutoNexus/releases/download/v1.0.0/sounds-nexus-again.7z)** (209 KB)
 - **[View All Releases](https://github.com/Abeelha/Born-Again-AutoNexus/releases)**
 2. Navigate to your game's root folder: `\Steam\steamapps\common\Born Again\Mods`
