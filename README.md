@@ -1,6 +1,6 @@
 # OUTDATED - NO LONGER WORKS!
 
-## 🎮 Showcase Auto-nexus
+## Showcase Auto-nexus
 
 **Click thumbnails below to watch demos:**
 
@@ -25,13 +25,13 @@ Download and install .NET 6.0 from the official Microsoft website:
 ## Installation Steps
 
 ### Step 1: Initial Game Setup
-> ⚠️ **IMPORTANT**: After installing MelonLoader, run the game at least once before proceeding.
+> **IMPORTANT**: After installing MelonLoader, run the game at least once before proceeding.
 
 1. Launch the game
 2. Close the game after it fully loads
 
 ### Step 2: Download and Install the DLL
-## 📥 Download
+## Download
 
 ### Latest Release: v1.0.0
 - **[Download AutoNexus.dll](https://github.com/Abeelha/Born-Again-AutoNexus/releases/download/v1.5.0/AutoNexus.dll)** (50 KB)
@@ -75,23 +75,23 @@ Download and install .NET 6.0 from the official Microsoft website:
 
 # Born Again Mod - Features & Updates
 
-## 🎯 Core Features
+## Core Features
 
-### 🔄 AutoNexus System
+### AutoNexus System
 - **Intelligent health monitoring** with predictive damage tracking
 - **Dynamic threshold adjustment** based on damage patterns
 - **Burst damage detection** for rapid health loss scenarios
 - **Optimized response time** with improved game update timing
 - **Configurable health percentage** for nexus trigger
 
-### 💊 AutoPot System
+### AutoPot System
 - **Automatic potion consumption** when health drops below threshold
 - **Predictive potion usage** to prevent death from burst damage
 - **Potion effectiveness tracking** to optimize usage timing
 - **Anti-panic potting** system to prevent unnecessary multiple potions
 - **Toggle functionality** with customizable keybind (default: `Ctrl + H`)
 
-### 🎮 User Interface
+### User Interface
 <img width="417" height="454" alt="image" src="https://github.com/user-attachments/assets/20258054-6189-4981-8d36-f7041e7ec124" />
 
 - **In-game configuration UI** for easy settings adjustment
@@ -99,14 +99,14 @@ Download and install .NET 6.0 from the official Microsoft website:
 - **Toggle UI with Insert key** - no more manual config file editing
 - **Real-time settings updates** without game restart
 
-### 🔧 Quality of Life Features
+### Quality of Life Features
 - **Enhanced zoom functionality** using mouse scroll wheel
 - **Roof removal system** - see through all building roofs
 - **Anti-AFK protection** prevents idle kick
 - **Custom name changer** for streaming/recording safety
 - **Sound notifications** for toggle actions
 
-## ⚙️ Recommended Settings
+## Recommended Settings
 
 ### Optimal Configuration
 Based on extensive testing and damage analysis:
@@ -122,7 +122,7 @@ Based on extensive testing and damage analysis:
 - **15% Safety Gap**: Maintains buffer between pot and nexus thresholds
 - **Burst Protection**: AutoNexus activates at 40% during heavy damage
 
-## 🎵 Audio System
+## Audio System
 
 ### Sound Notifications
 - **Toggle sound effects** for AutoNexus/AutoPot activation
@@ -130,7 +130,7 @@ Based on extensive testing and damage analysis:
 - **Easy installation** - place renamed files in `sounds` folder
 - **4 sound slots** for different actions
 
-## 🔧 Configuration
+## Configuration
 
 ### UI Configuration (Recommended)
 - Press **Insert** to open/close the configuration UI
@@ -148,7 +148,7 @@ Config file location: `\Steam\steamapps\common\Born Again\UserData\MelonPreferen
 - `ToggleAutoPot`: Keybind for toggling AutoPot (default: "Ctrl + H")
 - `ZoomKey`: Keybind for enhanced zoom (default: mouse wheel)
 
-## 🚀 Recent Improvements
+## Recent Improvements
 
 ### Performance Optimizations
 - **Faster nexus response** with optimized config settings
@@ -171,7 +171,7 @@ Config file location: `\Steam\steamapps\common\Born Again\UserData\MelonPreferen
 <img width="499" height="132" alt="image" src="https://github.com/user-attachments/assets/c529bb55-ff01-4e44-92d6-f1669d6410e3" />
 
 
-## 🎯 Usage Tips
+## Usage Tips
 
 1. **Delete old config files** when updating to ensure new features work properly
 2. **Run the game once** after each update to generate new config files
@@ -179,7 +179,7 @@ Config file location: `\Steam\steamapps\common\Born Again\UserData\MelonPreferen
 4. **Test settings** in safe areas before entering dangerous zones
 5. **Use recommended thresholds** for optimal protection
 
-## 🔊 Audio Setup
+## Audio Setup
 
 1. Navigate to the `sounds` folder
 2. Add your 4 custom audio files
